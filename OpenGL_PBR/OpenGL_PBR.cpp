@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -11,6 +12,7 @@ using namespace std;
 //Forward function declarations
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
+string readShaderFile(const char* fileName);
 
 //Temporary vertices for a 2d Triangle and indices
 float vertices[] = {
@@ -24,24 +26,6 @@ unsigned int indices[] = {
 	0, 1, 3,   // first triangle
 	1, 2, 3    // second triangle
 };
-
-
-//Temporary vertex and fragment shader
-const char* vertexShaderSource =
-"#version 460\n"
-"layout (location = 0) in vec3 aPos;\n"
-"void main()\n"
-"{\n"
-"	gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0f);\n"
-"}\0";
-
-const char* fragmentShaderSource =
-"#version 460\n"
-"out vec4 FragColor;\n"
-"void main()\n"
-"{\n"
-"	FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-"}\0";
 
 int main() {
 	//initialize GLFW 
@@ -106,8 +90,10 @@ int main() {
 
 	//Basic compilation of shaders
 	unsigned int vertexShader;
+	string temp = readShaderFile("vertexShader.vs");
+	const char* vertexS = temp.c_str();
 	vertexShader = glCreateShader(GL_VERTEX_SHADER); //Set vertexShader as an empty shader object
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL); //replace the contents of the shader object 
+	glShaderSource(vertexShader, 1, &vertexS, NULL); //replace the contents of the shader object 
 	glCompileShader(vertexShader); //Compile new shader contents
 	//Check whether the compilation was a success
 	int success;
@@ -121,7 +107,9 @@ int main() {
 
 	unsigned int fragmentShader;
 	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+	temp = readShaderFile("fragmentShader.fs");
+	const char* fragmentS = temp.c_str();
+	glShaderSource(fragmentShader, 1, &fragmentS, NULL);
 	glCompileShader(fragmentShader);
 	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
 	if (!success)
@@ -174,6 +162,31 @@ int main() {
 	//Clean up GLFW resources as we now want to close the program
 	glfwTerminate();
 	return 0;
+}
+
+string readShaderFile(const char* fileName)
+{
+	ifstream meInput(fileName);
+	if (!meInput.good()) //File failed to open
+	{
+		cout << "File Failed to Load" << fileName << endl;
+		return {};
+	}
+	/*string s;
+	while (meInput)
+	{
+		s += meInput.get();
+	}
+	meInput.close();
+	return s;
+	*/
+	
+	//iterate over the contents of the file
+	return string(
+		istreambuf_iterator<char>(meInput),
+		istreambuf_iterator<char>());
+	meInput.close();
+	
 }
 
 void processInput(GLFWwindow* window)
