@@ -31,6 +31,9 @@ void mouseCallback(GLFWwindow* window, double xPosition, double yPosition);
 
 void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 
+/* Bind cube to passed through VAO*/
+void bindCubeToVAO(unsigned int& vao);
+
 string readShaderFile(const char* fileName); //Unused
 
 //temporary place for object buffer data
@@ -95,6 +98,7 @@ vec3 cubePositions[] = {
 unsigned int VAO;
 unsigned int texture;
 unsigned int texture2;
+unsigned int lightVAO;
 
 unsigned int fps;
 
@@ -106,6 +110,8 @@ float lastFrame = 0.0f; //Time of last frame
 
 Camera* camera = new Camera(vec3(0.0, 0.0, 3.0), 45.f);
 
+Shader* lightShader;
+
 int main() {
 
 	//Initialize window and set it to main viewport
@@ -116,42 +122,11 @@ int main() {
 	// Assign callback function for whenever the user adjusts the viewport size
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	//Basic VAO 
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO); //Bind VAO to store any subsequent VBO & EBO calls
+	//Bind Main Object cube to VAO
+	bindCubeToVAO(VAO);
 
-	//Basic EBO for indices
-	/*unsigned int EBO;
-	glGenBuffers(1, &EBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-	*/
-
-	//Basic VBO Setup for vertices
-	unsigned int VBO;
-	glGenBuffers(1, &VBO); //Create a single buffer for the VBO
-	glBindBuffer(GL_ARRAY_BUFFER, VBO); // Bind Buffer to GL_ARRAY_BUFFER type
-	/*glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //allocate memory and copy vertices to buffer
-	//How are the vertices stored
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	*/
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Cubevertices), Cubevertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	//storing color attribute into buffer
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	//storing texture coordinates into buffer
-	//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-	//Unbind VAO, EBO and VBO. MUST UNBIND VAO FIRST
-	glBindVertexArray(0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//Bind cube data to new buffer for light
+	bindCubeToVAO(lightVAO);
 
 	//tell stbi to flip incoming images on load
 	stbi_set_flip_vertically_on_load(true);
@@ -204,6 +179,8 @@ int main() {
 
 
 	Shader currentShader("vertexShader.vert", "fragmentShader.frag");
+	//Bind light shader
+	lightShader = new Shader("lightShader.vert", "lightShader.frag");
 
 	//Tell shader which sampler belongs to which texture unit
 	currentShader.use();
@@ -256,7 +233,7 @@ int main() {
 			time = 1; //Reset timer
 		}
 
-		glfwSwapBuffers(window); //Render the coloured pixels to the window
+		glfwSwapBuffers(window); //Swap to the front/back buffer once the buffer has finished rendering
 		glfwPollEvents(); //Check if any user events have been triggered
 
 	}
@@ -339,6 +316,10 @@ void display(Shader shaderToUse)
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, texture2);
 
+	//Use basic colours as opposed to textures
+	shaderToUse.setVec3("objectColor", vec3(1.0, 0.5, 0.31));
+	shaderToUse.setVec3("lightColor", vec3(1.0, 1.0, 1.0));
+
 	//Draw multiple of the same object with varying translation vectors in world space
 	for (unsigned int i = 0; i < 10; i++)
 	{
@@ -350,7 +331,62 @@ void display(Shader shaderToUse)
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
+	
 	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	//Use different shader for the source of the light
+	lightShader->use();
+	lightShader->setMat4("projection", projection);
+	lightShader->setMat4("view", view);
+	vec3 lightPos(1.2f, 1.0f, 2.0f);
+	//Scale light and move it in world space
+	mat4 model(1.0f);
+	model = translate(model, lightPos);
+	model = scale(model, vec3(0.2f));
+	lightShader->setMat4("model", model);
+	//call VAO that holds the buffer and draw it to the screen
+	glBindVertexArray(lightVAO);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+}
+
+void bindCubeToVAO(unsigned int& vao)
+{
+	//Basic VAO 
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao); //Bind VAO to store any subsequent VBO & EBO calls
+
+	//Basic EBO for indices
+	/*unsigned int EBO;
+	glGenBuffers(1, &EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	*/
+
+	//Basic VBO Setup for vertices
+	unsigned int VBO;
+	glGenBuffers(1, &VBO); //Create a single buffer for the VBO
+	glBindBuffer(GL_ARRAY_BUFFER, VBO); // Bind Buffer to GL_ARRAY_BUFFER type
+	/*glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //allocate memory and copy vertices to buffer
+	//How are the vertices stored
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	*/
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Cubevertices), Cubevertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	//storing color attribute into buffer
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	//storing texture coordinates into buffer
+	//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	//Unbind VAO, EBO and VBO. MUST UNBIND VAO FIRST
+	glBindVertexArray(0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 string readShaderFile(const char* fileName)

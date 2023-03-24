@@ -135,14 +135,18 @@
     <ClCompile Include="..\glad.c" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="OpenGL_PBR.cpp" />
+    <ClCompile Include="OpenGL_Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="fragmentShader.frag" />
+    <None Include="lightShader.frag" />
+    <None Include="lightShader.vert" />
     <None Include="vertexShader.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="OpenGL_Renderer.h" />
     <ClInclude Include="Shader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

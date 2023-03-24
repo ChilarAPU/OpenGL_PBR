@@ -32,4 +32,5 @@ public:
 	void setInt(const string& name, int value) const;
 	void setFloat(const string& name, float value) const;
 	void setMat4(const string& name, mat4& matrix) const;
+	void setVec3(const string& name, vec3 value) const;
 };

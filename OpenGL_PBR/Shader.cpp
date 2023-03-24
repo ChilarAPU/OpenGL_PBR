@@ -38,7 +38,9 @@ void Shader::CompileShaders(const char* vertexCode, const char* fragmentCode)
 {
 	unsigned int vertex, fragment;
 	int success;
-	char infoLog[512];
+	GLint logLength; //Specifies the legnth of the log
+	string infoLog; //Where output log is stored
+
 
 	//vertex shader
 	vertex = glCreateShader(GL_VERTEX_SHADER);
@@ -47,8 +49,13 @@ void Shader::CompileShaders(const char* vertexCode, const char* fragmentCode)
 	glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
 	if (!success)
 	{
-		glGetShaderInfoLog(vertex, 512, NULL, infoLog);
+		glGetShaderiv(vertex, GL_INFO_LOG_LENGTH, &logLength); //Get length of output log
+		infoLog.resize(logLength); //Resize string to its desired length
+		glGetShaderInfoLog(vertex, logLength, &logLength, &infoLog[0]);
 		cout << "ERROR::SHADER:VERTEX:COMPILATION::FAILED\n" << infoLog << endl;
+		//Empty and reset string to empty ready for next call
+		infoLog = infoLog.empty(); 
+		infoLog.resize(0);
 	}
 
 	fragment = glCreateShader(GL_FRAGMENT_SHADER);
@@ -57,8 +64,12 @@ void Shader::CompileShaders(const char* vertexCode, const char* fragmentCode)
 	glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
 	if (!success)
 	{
-		glGetShaderInfoLog(fragment, 512, NULL, infoLog);
+		glGetShaderiv(fragment, GL_INFO_LOG_LENGTH, &logLength); //Get length of output log
+		infoLog.resize(logLength);
+		glGetShaderInfoLog(fragment, logLength, &logLength, &infoLog[0]);
 		cout << "ERROR::SHADER:FRAGMENT:COMPILATION::FAILED\n" << infoLog << endl;
+		infoLog = infoLog.empty();
+		infoLog.resize(0);
 	}
 
 	//Attach shaders
@@ -70,8 +81,12 @@ void Shader::CompileShaders(const char* vertexCode, const char* fragmentCode)
 	glGetProgramiv(ID, GL_LINK_STATUS, &success);
 	if (!success)
 	{
-		glGetProgramInfoLog(ID, 512, NULL, infoLog);
+		glGetShaderiv(ID, GL_INFO_LOG_LENGTH, &logLength); //Get length of output log
+		infoLog.resize(logLength);
+		glGetProgramInfoLog(ID, logLength, &logLength, &infoLog[0]);
 		cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << endl;
+		infoLog = infoLog.empty();
+		infoLog.resize(0);
 	}
 
 	//Delete shaders upon successful linking
@@ -108,5 +123,11 @@ void Shader::setFloat(const string& name, float value) const
 
 void Shader::setMat4(const string& name, mat4& matrix) const
 {
+	//pas through as transposed 4x4 matrix
 	glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &matrix[0][0]);
+}
+
+void Shader::setVec3(const string& name, vec3 value) const
+{
+	glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]);
 }

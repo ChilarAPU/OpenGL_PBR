@@ -39,10 +39,10 @@ void Camera::KeyboardMovement(EMovementDirection direction, float deltaTime)
 	switch (direction)
 	{
 	case FORWARD:
-		OffsetPosition(GetForwardVector() * Speed);
+		OffsetPosition(vec3(GetForwardVector().x, 0.0, GetForwardVector().z) * Speed);
 		break;
 	case BACKWARD:
-		OffsetPosition(-(GetForwardVector() * Speed));
+		OffsetPosition(-(vec3(GetForwardVector().x, 0.0, GetForwardVector().z) * Speed));
 		break;
 	case RIGHT:
 		OffsetPosition(normalize(cross(GetForwardVector(), cameraUp)) * Speed);
