@@ -71,8 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\jwwhi\source\repos\OpenGL_PBR\includes;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\jwwhi\source\repos\OpenGL_PBR\libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\..\OpenGL_PBR\includes;$(IncludePath)</IncludePath>
+    <LibraryPath>..\..\OpenGL_PBR\libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

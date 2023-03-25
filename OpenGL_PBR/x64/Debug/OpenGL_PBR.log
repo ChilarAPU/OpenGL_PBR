@@ -1,2 +1,16 @@
-﻿  Shader.cpp
+﻿  OpenGL_PBR.cpp
+C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(193,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(208,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(223,13): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(288,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(322,40): warning C4244: '=': conversion from 'double' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(323,40): warning C4244: '=': conversion from 'double' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
   OpenGL_PBR.vcxproj -> C:\Users\jwwhi\source\repos\OpenGL_PBR\x64\Debug\OpenGL_PBR.exe
