@@ -322,11 +322,33 @@ void display(Shader shaderToUse)
 	lightPos.x = cos(1.0 * glfwGetTime()) * 3.f;
 	lightPos.z = sin(1.0 * glfwGetTime()) * 3.f;
 
+	//adjust light colour over time
+	vec3 lightColor;
+	lightColor.x = sin((glfwGetTime()) * 2.0f);
+	lightColor.y = sin((glfwGetTime()) * 0.7f);
+	lightColor.z = sin((glfwGetTime()) * 1.3f);
+
+	vec3 diffuseColor = lightColor * vec3(0.5f);
+	vec3 ambientColor = diffuseColor * vec3(0.2f);
+
 	//Use basic colours as opposed to textures
 	shaderToUse.setVec3("objectColor", vec3(1.0, 0.5, 0.31));
 	shaderToUse.setVec3("lightColor", vec3(1.0, 1.0, 1.0));
 	shaderToUse.setVec3("lightPos", lightPos);
 	shaderToUse.setVec3("viewPos", camera->GetPosition());
+
+	//Set Material struct uniforms
+	shaderToUse.setVec3("material.ambient", vec3(1.0f, 0.5f, 0.31f));
+	shaderToUse.setVec3("material.diffuse", vec3(1.0f, 0.5f, 0.31f));
+	shaderToUse.setVec3("material.specular", vec3(0.5f, 0.5f, 0.5f));
+	shaderToUse.setFloat("material.shininess", 32.0f);
+	
+	//Set Light struct uniforms
+	//We do this so that each lighting technique has different strength amounts
+	shaderToUse.setVec3("light.ambient", ambientColor);
+	shaderToUse.setVec3("light.diffuse", diffuseColor);
+	shaderToUse.setVec3("light.specular", vec3(1.0f, 1.0f, 1.0f));
+	shaderToUse.setVec3("light.position", lightPos);
 
 	//Draw multiple of the same object with varying translation vectors in world space
 	for (unsigned int i = 0; i < 10; i++)
@@ -351,6 +373,8 @@ void display(Shader shaderToUse)
 	model = translate(model, lightPos);
 	model = scale(model, vec3(0.2f));
 	lightShader->setMat4("model", model);
+	//Set colour of the light object
+	lightShader->setVec3("lightColor", lightColor);
 	//call VAO that holds the buffer and draw it to the screen
 	glBindVertexArray(lightVAO);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
