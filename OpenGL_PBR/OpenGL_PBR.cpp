@@ -34,51 +34,54 @@ void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 /* Bind cube to passed through VAO*/
 void bindCubeToVAO(unsigned int& vao);
 
+unsigned int loadTexture(const char* path);
+
 string readShaderFile(const char* fileName); //Unused
 
 //temporary place for object buffer data
 float Cubevertices[] = {
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+	// positions          // normals           // texture coords
+-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+ 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+ 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+ 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+ 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+ 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+ 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
 
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+ 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+ 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+ 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+ 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+ 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+ 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+ 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+ 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+ 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
 
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+ 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+ 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+ 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
 };
 
 vec3 cubePositions[] = {
@@ -96,8 +99,9 @@ vec3 cubePositions[] = {
 
 //temporary place for buffer objects
 unsigned int VAO;
-unsigned int texture;
-unsigned int texture2;
+unsigned int diffuse;
+unsigned int specular;
+unsigned int emissive;
 unsigned int lightVAO;
 
 unsigned int fps;
@@ -128,64 +132,25 @@ int main() {
 	//Bind cube data to new buffer for light
 	bindCubeToVAO(lightVAO);
 
-	//tell stbi to flip incoming images on load
-	stbi_set_flip_vertically_on_load(true);
-
-	//Load texture from file using stb
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load("../brickwall.jpg", &width, &height, &nrChannels, 0);
-
-	//Generate texture into shader 
-	glGenTextures(1, &texture); //Generate 1 texture buffer
-	glBindTexture(GL_TEXTURE_2D, texture);
-
-	//How should we handle texture coordinates outside of 0-1
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	//Texture filtering for both scalling up and down
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	if (data)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D); //Automatically generate mipmap for passed through texture
-	}
-	else 
-	{
-		cout << "FAILED TO LOAD TEXTURE 'brickwall.jpg'" << endl;
-	}
-	
-
-	//Free memory that holds the source texture data
-	stbi_image_free(data);
-
-	data = stbi_load("../carlos.jpg", &width, &height, &nrChannels, 0);
-
-	//Generate texture into shader 
-	glGenTextures(1, &texture2); //Generate 1 texture buffer
-	glBindTexture(GL_TEXTURE_2D, texture2);
-
-	if (data)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D); //Automatically generate mipmap for passed through texture
-	}
-	else
-	{
-		cout << "FAILED TO LOAD TEXTURE 'carlos.jpg'" << endl;
-	}
-
+	diffuse = loadTexture("../textures/container2.png");
+	specular = loadTexture("../textures/container2_specular.png");
+	emissive = loadTexture("../textures/matrix.jpg");
 
 	Shader currentShader("vertexShader.vert", "fragmentShader.frag");
 	//Bind light shader
 	lightShader = new Shader("lightShader.vert", "lightShader.frag");
 
-	//Tell shader which sampler belongs to which texture unit
-	currentShader.use();
-	currentShader.setInt("ourTexture1", 0);
-	currentShader.setInt("ourTexture2", 1);
+	//Bind texture 0 to diffuse
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, diffuse);
+
+	//Bind texture 1 to specular
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, specular);
+
+	//Bind texture 2 to emissive
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, emissive);
 
 	//temp FPS calc
 	float time = 1.f; //Time to delay for
@@ -308,14 +273,6 @@ void display(Shader shaderToUse)
 	shaderToUse.setMat4("view", view);
 	shaderToUse.setMat4("projection", projection);
 
-	//Texture will be binded to GL_TEXTURE0
-	glActiveTexture(GL_TEXTURE0);
-	//Bind texture to fragment shader
-	glBindTexture(GL_TEXTURE_2D, texture);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, texture2);
-
 	//Position of the light source
 	vec3 lightPos(1.2f, 1.0f, 2.0f);
 	//Move light source around a circle with a radius of 3 and a speed of 1
@@ -329,25 +286,22 @@ void display(Shader shaderToUse)
 	lightColor.z = sin((glfwGetTime()) * 1.3f);
 
 	vec3 diffuseColor = lightColor * vec3(0.5f);
-	vec3 ambientColor = diffuseColor * vec3(0.2f);
+	vec3 ambientColor = diffuseColor * vec3(0.7f);
 
-	//Use basic colours as opposed to textures
-	shaderToUse.setVec3("objectColor", vec3(1.0, 0.5, 0.31));
-	shaderToUse.setVec3("lightColor", vec3(1.0, 1.0, 1.0));
-	shaderToUse.setVec3("lightPos", lightPos);
 	shaderToUse.setVec3("viewPos", camera->GetPosition());
 
 	//Set Material struct uniforms
-	shaderToUse.setVec3("material.ambient", vec3(1.0f, 0.5f, 0.31f));
-	shaderToUse.setVec3("material.diffuse", vec3(1.0f, 0.5f, 0.31f));
-	shaderToUse.setVec3("material.specular", vec3(0.5f, 0.5f, 0.5f));
-	shaderToUse.setFloat("material.shininess", 32.0f);
+	shaderToUse.setFloat("material.shininess", 64.0f);
+	//Assign relevant texture unit to sampler
+	shaderToUse.setInt("material.diffuse", 0);
+	shaderToUse.setInt("material.specular", 1);
+	shaderToUse.setInt("material.emissive", 2);
 	
 	//Set Light struct uniforms
 	//We do this so that each lighting technique has different strength amounts
-	shaderToUse.setVec3("light.ambient", ambientColor);
-	shaderToUse.setVec3("light.diffuse", diffuseColor);
-	shaderToUse.setVec3("light.specular", vec3(1.0f, 1.0f, 1.0f));
+	shaderToUse.setVec3("light.ambient", ambientColor); 
+	shaderToUse.setVec3("light.diffuse", diffuseColor); //colour of diffuse reflections
+	shaderToUse.setVec3("light.specular", lightColor); //Colour of specular reflections
 	shaderToUse.setVec3("light.position", lightPos);
 
 	//Draw multiple of the same object with varying translation vectors in world space
@@ -402,25 +356,78 @@ void bindCubeToVAO(unsigned int& vao)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	*/
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Cubevertices), Cubevertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	//storing color attribute into buffer
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	//storing texture coordinates into buffer
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	//storing texture coordinates into buffer
-	//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	//normals
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(2);
-
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(3);
 
 	//Unbind VAO, EBO and VBO. MUST UNBIND VAO FIRST
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+unsigned int loadTexture(const char* path)
+{
+	//tell stbi to flip incoming images on load
+	stbi_set_flip_vertically_on_load(true);
+
+	//Load texture from file using stb
+	unsigned int textureID = 0;
+	int width, height, nrChannels;
+
+	unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
+	
+	if (data)
+	{
+		//Generate texture into shader 
+		glGenTextures(1, &textureID); //Generate 1 texture buffer
+		glBindTexture(GL_TEXTURE_2D, textureID);
+
+		GLenum format;
+
+		switch (nrChannels)
+		{
+		case 1:
+			format = GL_RED;
+			break;
+		case 3:
+			format = GL_RGB;
+			break;
+		case 4:
+			format = GL_RGBA;
+			break;
+		}
+
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D); //Automatically generate mipmap for passed through texture
+		//How should we handle texture coordinates outside of 0-1
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		//Texture filtering for both scalling up and down
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		//Free memory that holds the source texture data
+		// Have to call free() as stbi_image_free() crashes with .jpg files
+		//stbi_image_free(data);
+		free(data);
+		
+	}
+	else
+	{
+		cout << "FAILED TO LOAD TEXTURE: " << path << endl;
+		//Free memory that holds the source texture data
+		stbi_image_free(data);
+		return 0;
+	}
+	
+	return textureID;
 }
 
 string readShaderFile(const char* fileName)
