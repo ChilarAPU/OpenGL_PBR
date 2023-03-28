@@ -97,6 +97,20 @@ vec3 cubePositions[] = {
 	glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
+vec3 pointLightPositions[] = {
+	vec3(0.7f,  0.2f,  2.0f),
+	vec3(2.3f, -3.3f, -4.0f),
+	vec3(-4.0f,  2.0f, -12.0f),
+	vec3(0.0f,  0.0f, -3.0f)
+};
+
+vec3 pointLightColorss[] = {
+	vec3(1.0f,  0.0f,  0.0f),
+	vec3(0.0f, 1.0f, 0.0f),
+	vec3(0.0f,  0.0f, 1.0f),
+	vec3(1.0f,  0.0f, 1.0f)
+};
+
 //temporary place for buffer objects
 unsigned int VAO;
 unsigned int diffuse;
@@ -276,14 +290,14 @@ void display(Shader shaderToUse)
 	//Position of the light source
 	vec3 lightPos(1.2f, 1.0f, 2.0f);
 	//Move light source around a circle with a radius of 3 and a speed of 1
-	lightPos.x = cos(1.0 * glfwGetTime()) * 3.f;
-	lightPos.z = sin(1.0 * glfwGetTime()) * 3.f;
+	//lightPos.x = cos(1.0 * glfwGetTime()) * 3.f;
+	//lightPos.z = sin(1.0 * glfwGetTime()) * 3.f;
 
 	//adjust light colour over time
-	vec3 lightColor;
-	lightColor.x = sin((glfwGetTime()) * 2.0f);
-	lightColor.y = sin((glfwGetTime()) * 0.7f);
-	lightColor.z = sin((glfwGetTime()) * 1.3f);
+	vec3 lightColor = vec3(1.0, 1.0, 1.0);
+	//lightColor.x = sin((glfwGetTime()) * 2.0f);
+	//lightColor.y = sin((glfwGetTime()) * 0.7f);
+	//lightColor.z = sin((glfwGetTime()) * 1.3f);
 
 	vec3 diffuseColor = lightColor * vec3(0.5f);
 	vec3 ambientColor = diffuseColor * vec3(0.7f);
@@ -296,13 +310,57 @@ void display(Shader shaderToUse)
 	shaderToUse.setInt("material.diffuse", 0);
 	shaderToUse.setInt("material.specular", 1);
 	shaderToUse.setInt("material.emissive", 2);
+
+	//Directional Light
+	shaderToUse.setVec3("dirLight.direction", vec3(-0.2, -1.0, -0.3));
+	shaderToUse.setVec3("dirLight.ambient", ambientColor);
+	shaderToUse.setVec3("dirLight.diffuse", diffuseColor);
+	shaderToUse.setVec3("dirLight.specular", lightColor);
+
+	//Pass through light values for point lights
+	for (int i = 0; i < 4; i++)
+	{
+		//First part of struct uniform 
+		string t = "pointLights[";
+		t += to_string(i);
+
+		shaderToUse.setVec3(t + "].position", pointLightPositions[i]);
+		shaderToUse.setVec3(t + "].diffuse", pointLightColorss[i] * vec3(0.5));
+		shaderToUse.setVec3(t + "].ambient", pointLightColorss[i] * vec3(0.1));
+		shaderToUse.setVec3(t + "].specular", pointLightColorss[i]);
+		shaderToUse.setFloat(t + "].constant", 1.0f);
+		shaderToUse.setFloat(t + "].linear", 0.09f);
+		shaderToUse.setFloat(t + "].quadratic", 0.032f);
+	}
+
+	shaderToUse.setVec3("spotLight.position", camera->GetPosition());
+	shaderToUse.setVec3("spotLight.direction", camera->GetForwardVector());
+	shaderToUse.setFloat("spotLight.cutOff", cos(radians(12.5f)));
+	shaderToUse.setFloat("spotLight.outerCutOff", cos(radians(17.5f)));
+	shaderToUse.setVec3("spotLight.ambient", vec3(1.0f));
+	shaderToUse.setVec3("spotLight.diffuse", vec3(1.0f));
+	shaderToUse.setVec3("spotLight.specular", vec3(1.0f));
 	
 	//Set Light struct uniforms
 	//We do this so that each lighting technique has different strength amounts
-	shaderToUse.setVec3("light.ambient", ambientColor); 
-	shaderToUse.setVec3("light.diffuse", diffuseColor); //colour of diffuse reflections
-	shaderToUse.setVec3("light.specular", lightColor); //Colour of specular reflections
-	shaderToUse.setVec3("light.position", lightPos);
+	//shaderToUse.setVec3("light.ambient", ambientColor); 
+	//shaderToUse.setVec3("light.diffuse", diffuseColor); //colour of diffuse reflections
+	//shaderToUse.setVec3("light.specular", lightColor); //Colour of specular reflections
+	//shaderToUse.setVec3("light.position", lightPos);
+	//Pass through direction light as oppsed to lights position
+	//shaderToUse.setVec3("light.direction", vec3(-0.2, -1.0f, -0.3));
+	//Pass through light attenuation settings. These values cover a distance of 50 units
+	
+	//shaderToUse.setFloat("light.constant", 1.0f);
+	//shaderToUse.setFloat("light.linear", 0.09f);
+	//shaderToUse.setFloat("light.quadratic", 0.032f);
+	
+	//pass through flashlight settings
+	//shaderToUse.setVec3("light.position", camera->GetPosition());
+	//shaderToUse.setVec3("light.direction", camera->GetForwardVector());
+	//Spotlight angle of radius
+	//shaderToUse.setFloat("light.cutOff", cos(radians(12.5f)));
+	//shaderToUse.setFloat("light.outerCutOff", cos(radians(17.5f)));
 
 	//Draw multiple of the same object with varying translation vectors in world space
 	for (unsigned int i = 0; i < 10; i++)
@@ -322,16 +380,20 @@ void display(Shader shaderToUse)
 	lightShader->use();
 	lightShader->setMat4("projection", projection);
 	lightShader->setMat4("view", view);
-	//Scale light and move it in world space
-	mat4 model(1.0f);
-	model = translate(model, lightPos);
-	model = scale(model, vec3(0.2f));
-	lightShader->setMat4("model", model);
-	//Set colour of the light object
-	lightShader->setVec3("lightColor", lightColor);
-	//call VAO that holds the buffer and draw it to the screen
-	glBindVertexArray(lightVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
+	//Draw 4 cube lights at different positions with different colours
+	for (unsigned int i = 0; i < 4; i++)
+	{
+		//Scale light and move it in world space
+		mat4 model(1.0f);
+		model = translate(model, pointLightPositions[i]);
+		model = scale(model, vec3(0.2f));
+		lightShader->setMat4("model", model);
+		//Set colour of the light object
+		lightShader->setVec3("lightColor", pointLightColorss[i]);
+		//call VAO that holds the buffer and draw it to the screen
+		glBindVertexArray(lightVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
 }
 
 void bindCubeToVAO(unsigned int& vao)
