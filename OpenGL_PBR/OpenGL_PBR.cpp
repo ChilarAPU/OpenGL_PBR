@@ -9,6 +9,7 @@
 
 #include "Shader.h"
 #include "Camera.h"
+#include "Texture.h"
 
 using namespace std;
 using namespace glm;
@@ -33,10 +34,6 @@ void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 
 /* Bind cube to passed through VAO*/
 void bindCubeToVAO(unsigned int& vao);
-
-unsigned int loadTexture(const char* path);
-
-string readShaderFile(const char* fileName); //Unused
 
 //temporary place for object buffer data
 float Cubevertices[] = {
@@ -113,10 +110,10 @@ vec3 pointLightColorss[] = {
 
 //temporary place for buffer objects
 unsigned int VAO;
-unsigned int diffuse;
-unsigned int specular;
-unsigned int emissive;
 unsigned int lightVAO;
+unique_ptr<Texture> cubeDiffuse(new Texture());
+unique_ptr<Texture> cubeSpecular(new Texture());
+unique_ptr<Texture> cubeEmissive(new Texture());
 
 unsigned int fps;
 
@@ -146,25 +143,17 @@ int main() {
 	//Bind cube data to new buffer for light
 	bindCubeToVAO(lightVAO);
 
-	diffuse = loadTexture("../textures/container2.png");
-	specular = loadTexture("../textures/container2_specular.png");
-	emissive = loadTexture("../textures/matrix.jpg");
+	//Load and bind textures to buffers
+	cubeDiffuse->LoadTexture("../textures/container2.png");
+	cubeSpecular->LoadTexture("../textures/container2_specular.png");
+	cubeEmissive->LoadTexture("../textures/matrix.jpg");
+	cubeDiffuse->BindTextureToBuffer(GL_TEXTURE0);
+	cubeSpecular->BindTextureToBuffer(GL_TEXTURE1);
+	cubeEmissive->BindTextureToBuffer(GL_TEXTURE2);
 
 	Shader currentShader("vertexShader.vert", "fragmentShader.frag");
 	//Bind light shader
 	lightShader = new Shader("lightShader.vert", "lightShader.frag");
-
-	//Bind texture 0 to diffuse
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, diffuse);
-
-	//Bind texture 1 to specular
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, specular);
-
-	//Bind texture 2 to emissive
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, emissive);
 
 	//temp FPS calc
 	float time = 1.f; //Time to delay for
@@ -340,27 +329,6 @@ void display(Shader shaderToUse)
 	shaderToUse.setVec3("spotLight.ambient", vec3(1.0f));
 	shaderToUse.setVec3("spotLight.diffuse", vec3(1.0f));
 	shaderToUse.setVec3("spotLight.specular", vec3(1.0f));
-	
-	//Set Light struct uniforms
-	//We do this so that each lighting technique has different strength amounts
-	//shaderToUse.setVec3("light.ambient", ambientColor); 
-	//shaderToUse.setVec3("light.diffuse", diffuseColor); //colour of diffuse reflections
-	//shaderToUse.setVec3("light.specular", lightColor); //Colour of specular reflections
-	//shaderToUse.setVec3("light.position", lightPos);
-	//Pass through direction light as oppsed to lights position
-	//shaderToUse.setVec3("light.direction", vec3(-0.2, -1.0f, -0.3));
-	//Pass through light attenuation settings. These values cover a distance of 50 units
-	
-	//shaderToUse.setFloat("light.constant", 1.0f);
-	//shaderToUse.setFloat("light.linear", 0.09f);
-	//shaderToUse.setFloat("light.quadratic", 0.032f);
-	
-	//pass through flashlight settings
-	//shaderToUse.setVec3("light.position", camera->GetPosition());
-	//shaderToUse.setVec3("light.direction", camera->GetForwardVector());
-	//Spotlight angle of radius
-	//shaderToUse.setFloat("light.cutOff", cos(radians(12.5f)));
-	//shaderToUse.setFloat("light.outerCutOff", cos(radians(17.5f)));
 
 	//Draw multiple of the same object with varying translation vectors in world space
 	for (unsigned int i = 0; i < 10; i++)
@@ -433,88 +401,6 @@ void bindCubeToVAO(unsigned int& vao)
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
-
-unsigned int loadTexture(const char* path)
-{
-	//tell stbi to flip incoming images on load
-	stbi_set_flip_vertically_on_load(true);
-
-	//Load texture from file using stb
-	unsigned int textureID = 0;
-	int width, height, nrChannels;
-
-	unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
-	
-	if (data)
-	{
-		//Generate texture into shader 
-		glGenTextures(1, &textureID); //Generate 1 texture buffer
-		glBindTexture(GL_TEXTURE_2D, textureID);
-
-		GLenum format;
-
-		switch (nrChannels)
-		{
-		case 1:
-			format = GL_RED;
-			break;
-		case 3:
-			format = GL_RGB;
-			break;
-		case 4:
-			format = GL_RGBA;
-			break;
-		}
-
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D); //Automatically generate mipmap for passed through texture
-		//How should we handle texture coordinates outside of 0-1
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		//Texture filtering for both scalling up and down
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		//Free memory that holds the source texture data
-		// Have to call free() as stbi_image_free() crashes with .jpg files
-		//stbi_image_free(data);
-		free(data);
-		
-	}
-	else
-	{
-		cout << "FAILED TO LOAD TEXTURE: " << path << endl;
-		//Free memory that holds the source texture data
-		stbi_image_free(data);
-		return 0;
-	}
-	
-	return textureID;
-}
-
-string readShaderFile(const char* fileName)
-{
-	ifstream meInput(fileName);
-	if (!meInput.good()) //File failed to open
-	{
-		cout << "File Failed to Load" << fileName << endl;
-		return {};
-	}
-	/*string s;
-	while (meInput)
-	{
-		s += meInput.get();
-	}
-	meInput.close();
-	return s;
-	*/
-	
-	//iterate over the contents of the file
-	return string(
-		istreambuf_iterator<char>(meInput),
-		istreambuf_iterator<char>());
-	meInput.close();
-	
 }
 
 void scrollCallback(GLFWwindow* window, double xOffset, double yOffset)

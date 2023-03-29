@@ -137,6 +137,7 @@
     <ClCompile Include="OpenGL_PBR.cpp" />
     <ClCompile Include="OpenGL_Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="fragmentShader.frag" />
@@ -148,6 +149,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="OpenGL_Renderer.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="Texture.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
