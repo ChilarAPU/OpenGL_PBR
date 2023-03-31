@@ -6,10 +6,12 @@
 #include <glm/gtc/type_ptr.hpp>
 #define STB_IMAGE_IMPLEMENTATION //Effectively turns header file into a cpp file
 #include <STB/stb_image.h>
+#include <assimp/config.h>
 
 #include "Shader.h"
 #include "Camera.h"
 #include "Texture.h"
+#include "Model.h"
 
 using namespace std;
 using namespace glm;
@@ -26,7 +28,7 @@ void processInput(GLFWwindow* window);
 /* Initialize OpenGL window as well as GLFW and glad libraries*/
 void initWindow(GLFWwindow*& window);
 /* Render polygon to screen */
-void display(Shader shaderToUse);
+void display(Shader shaderToUse, Model m);
 
 void mouseCallback(GLFWwindow* window, double xPosition, double yPosition);
 
@@ -144,12 +146,13 @@ int main() {
 	bindCubeToVAO(lightVAO);
 
 	//Load and bind textures to buffers
-	cubeDiffuse->LoadTexture("../textures/container2.png");
+	/*cubeDiffuse->LoadTexture("../textures/container2.png");
 	cubeSpecular->LoadTexture("../textures/container2_specular.png");
 	cubeEmissive->LoadTexture("../textures/matrix.jpg");
 	cubeDiffuse->BindTextureToBuffer(GL_TEXTURE0);
 	cubeSpecular->BindTextureToBuffer(GL_TEXTURE1);
 	cubeEmissive->BindTextureToBuffer(GL_TEXTURE2);
+	*/
 
 	Shader currentShader("vertexShader.vert", "fragmentShader.frag");
 	//Bind light shader
@@ -168,6 +171,7 @@ int main() {
 	//Scroll wheel callback
 	glfwSetScrollCallback(window, scrollCallback);
 
+	Model backpack("../textures/backpack.obj");
 
 	//Run the window until explicitly told to stop
 	while (!glfwWindowShouldClose(window))  //Check if the window has been instructed to close
@@ -185,7 +189,7 @@ int main() {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		display(currentShader);
+		display(currentShader, backpack);
 
 		//temp looping timer
 		float now = glfwGetTime(); //Get time of current frame
@@ -246,7 +250,7 @@ void initWindow(GLFWwindow*& window)
 	glViewport(0, 0, VIEWPORTWIDTH, VIEWPORTHEIGHT);
 }
 
-void display(Shader shaderToUse)
+void display(Shader shaderToUse, Model m)
 {
 	//Wireframe Mode
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -296,7 +300,7 @@ void display(Shader shaderToUse)
 	//Set Material struct uniforms
 	shaderToUse.setFloat("material.shininess", 64.0f);
 	//Assign relevant texture unit to sampler
-	shaderToUse.setInt("material.diffuse", 0);
+	//shaderToUse.setInt("material.diffuse", 0);
 	shaderToUse.setInt("material.specular", 1);
 	shaderToUse.setInt("material.emissive", 2);
 
@@ -331,7 +335,7 @@ void display(Shader shaderToUse)
 	shaderToUse.setVec3("spotLight.specular", vec3(1.0f));
 
 	//Draw multiple of the same object with varying translation vectors in world space
-	for (unsigned int i = 0; i < 10; i++)
+	/*for (unsigned int i = 0; i < 10; i++)
 	{
 		mat4 model = mat4(1.0);
 		model = translate(model, cubePositions[i]); //set world position location of object
@@ -341,6 +345,11 @@ void display(Shader shaderToUse)
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
+	*/
+	mat4 model = mat4(1.0);
+	shaderToUse.setMat4("model", model);
+	m.Draw(shaderToUse);
+	
 	
 	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 

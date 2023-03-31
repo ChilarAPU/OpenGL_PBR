@@ -1,5 +1,4 @@
 
-#include <glad/glad.h>
 #include <STB/stb_image.h>
 #include "Texture.h"
 
@@ -8,6 +7,17 @@
 Texture::Texture()
 {
 	ID = 0;
+	type = "";
+}
+
+string Texture::GetName()
+{
+	return type;
+}
+
+unsigned int Texture::GetID()
+{
+	return ID;
 }
 
 void Texture::LoadTexture(const char* path)

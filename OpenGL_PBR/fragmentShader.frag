@@ -56,6 +56,8 @@ uniform SpotLight spotLight;
 uniform Material material;
 uniform vec3 viewPos;
 
+//uniform sampler2D texture_diffuse1;
+
 // Give attenuation a default value as not every light caster uses it
 vec3 calculatePhongLighting(vec3 lightDir, vec3 normal, vec3 viewDir, vec3 ambientColor, vec3 diffuseColor, vec3 specularColor, float attenuation = 1);
 vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 viewDir);
@@ -69,22 +71,23 @@ void main()
 	vec3 norm = normalize(Normal);
 	vec3 viewDir = normalize(viewPos - FragPos);
 
-	vec3 ambient;
-	vec3 diffuse;
-	vec3 specular;
+	//vec3 ambient;
+	//vec3 diffuse;
+	//vec3 specular;
 
 	//Directional light
-	vec3 result = calculateDirectionalLight(dirLight, norm, viewDir);
-	//vec3 result;
+	//vec3 result = calculateDirectionalLight(dirLight, norm, viewDir);
 	//Point lights
-	for (int i = 0; i < NR_POINT_LIGHTS; i++)
-	{
-		result += calculatePointLight(pointLights[i], norm, FragPos, viewDir);
-	}
+	//for (int i = 0; i < NR_POINT_LIGHTS; i++)
+	//{
+		//result += calculatePointLight(pointLights[i], norm, FragPos, viewDir);
+	//}
 	//SpotLights
-	result += calculateSpotLight(spotLight, norm, FragPos, viewDir);
+	//result += calculateSpotLight(spotLight, norm, FragPos, viewDir);
 
-	FragColor = vec4(result, 1.0);
+	//FragColor = vec4(result, 1.0);
+	FragColor = vec4(texture(material.diffuse, texCoord));
+
 }
 
 vec3 calculatePhongLighting(vec3 lightDir, vec3 normal, vec3 viewDir, vec3 ambientColor, vec3 diffuseColor, vec3 specularColor, float attenuation = 1)
