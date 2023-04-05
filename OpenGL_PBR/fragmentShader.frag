@@ -76,17 +76,17 @@ void main()
 	//vec3 specular;
 
 	//Directional light
-	//vec3 result = calculateDirectionalLight(dirLight, norm, viewDir);
+	vec3 result = calculateDirectionalLight(dirLight, norm, viewDir);
 	//Point lights
-	//for (int i = 0; i < NR_POINT_LIGHTS; i++)
-	//{
-		//result += calculatePointLight(pointLights[i], norm, FragPos, viewDir);
-	//}
+	for (int i = 0; i < NR_POINT_LIGHTS; i++)
+	{
+		result += calculatePointLight(pointLights[i], norm, FragPos, viewDir);
+	}
 	//SpotLights
 	//result += calculateSpotLight(spotLight, norm, FragPos, viewDir);
 
-	//FragColor = vec4(result, 1.0);
-	FragColor = vec4(texture(material.diffuse, texCoord));
+	FragColor = vec4(result, 1.0);
+	//FragColor = vec4(texture(material.specular, texCoord));
 
 }
 

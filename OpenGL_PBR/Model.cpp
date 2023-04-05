@@ -1,8 +1,8 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <STB/stb_image.h>
+#include <algorithm>
 #include "Model.h"
-
 
 using namespace Assimp;
 
@@ -15,9 +15,14 @@ Model::Model(const char* path)
 	loadModel(path);
 }
 
-void Model::Draw(Shader& shader)
+void Model::Draw(Shader& shader, int meshToDraw)
 {
 	//Loop over each mesh in the model and render it to the screen
+	if (meshToDraw < meshes.size())
+	{
+		meshes[meshToDraw].Draw(shader);
+		return;
+	}
 	for (unsigned int i = 0; i < meshes.size(); i++)
 	{
 		meshes[i].Draw(shader);
@@ -107,7 +112,8 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		}
 	}
 
-	if (mesh->mMaterialIndex >= 0) //Does the imported mesh contain material indexes
+	//Setup materials
+	/*if (mesh->mMaterialIndex >= 0) //Does the imported mesh contain material indexes
 	{
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 		//load diffuse textures
@@ -118,7 +124,23 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		vector<MTexture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end()); //insert all specular maps into texture vector
 	}
+	*/
 
+	//Setup texture directly, ignoring the .mtl file
+
+	//diffuse
+	TextureLoadReturn texture = loadTexture(aiTextureType_DIFFUSE, "../textures/swordTextures/Albedo.png");
+	if (texture.bIsNewTexture)
+	{
+		textures.push_back(texture.texture);
+	}
+	//specular
+	texture = loadTexture(aiTextureType_SPECULAR, "../textures/swordTextures/Metallic.png");
+	if (texture.bIsNewTexture)
+	{
+		textures.push_back(texture.texture);
+	}
+	
 	return Mesh(vertices, indices, textures);
 }
 
@@ -155,10 +177,35 @@ vector<MTexture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type
 	return textures;
 }
 
+TextureLoadReturn Model::loadTexture(aiTextureType type, string pathToTexture)
+{
+	//vector<MTexture> textures;
+	TextureLoadReturn texture;
+	texture.bIsNewTexture = true;
+	//MTexture texture;
+	//Check to make sure we have not already loaded the texture
+	texture.texture.path = pathToTexture;
+	bool b = any_of(textures_loaded.begin(), textures_loaded.end(), [texture](MTexture x) { return texture.texture.path == x.path; });
+	//have we already loaded this texture before
+	if (b)
+	{
+		//if we have, return nothing
+		texture.bIsNewTexture = false;
+		return texture;
+	}
+	//load texture to textures_loaded
+	texture.texture.id = TextureFromFile(pathToTexture.c_str(), directory);
+	texture.texture.type = type;
+	textures_loaded.push_back(texture.texture);
+
+	return texture;
+}
+
 unsigned int Model::TextureFromFile(const char* path, const string& directory, bool gamma)
 {
 	string filename = string(path);
-	filename = directory + '/' + filename;
+	//filename = directory + '/' + filename;
+	cout << filename << endl;
 
 	stbi_set_flip_vertically_on_load(true);
 

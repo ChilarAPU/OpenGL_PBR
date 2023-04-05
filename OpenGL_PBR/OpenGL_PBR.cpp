@@ -118,6 +118,7 @@ unique_ptr<Texture> cubeSpecular(new Texture());
 unique_ptr<Texture> cubeEmissive(new Texture());
 
 unsigned int fps;
+float frameTime = 0;
 
 //temp camera
 vec3 cameraUp = vec3(0.0, 1.0, 0.0);
@@ -171,7 +172,7 @@ int main() {
 	//Scroll wheel callback
 	glfwSetScrollCallback(window, scrollCallback);
 
-	Model backpack("../textures/backpack.obj");
+	Model backpack("../textures/Katana_export.fbx");
 
 	//Run the window until explicitly told to stop
 	while (!glfwWindowShouldClose(window))  //Check if the window has been instructed to close
@@ -195,14 +196,24 @@ int main() {
 		float now = glfwGetTime(); //Get time of current frame
 		float delta = now - cachedTime; //difference between current and previous frame
 		cachedTime = now; //Update cachedTime to hold new time
+		
+		//calculate frametime
+		if (delta > frameTime) //Set frametime to the highest value
+		{
+			frameTime = delta;
+			frameTime *= 1000; //Multiply by 1000 so we get the frametime in a much easir to read format
+		}
 
 		fps++;
 		time -= delta; //subtract difference from specified time
 		if (time <= 0.f) //Have we used up the alloted time
 		{
 			cout << fps << " fps" << endl;
+			cout << "Frametime: " << frameTime << "ms" << endl;
 			fps = 0; //Reset FPS counter
 			time = 1; //Reset timer
+			frameTime = 0; //Reset framtime
+
 		}
 
 		glfwSwapBuffers(window); //Swap to the front/back buffer once the buffer has finished rendering
@@ -346,10 +357,17 @@ void display(Shader shaderToUse, Model m)
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
 	*/
+
+	//Draw sword
 	mat4 model = mat4(1.0);
+	model = scale(model, vec3(3.0, 3.0, 3.0));
+	model = rotate(model, (float)radians(90.f), vec3(1.0f, 0.0, 0.0));
 	shaderToUse.setMat4("model", model);
-	m.Draw(shaderToUse);
-	
+	m.Draw(shaderToUse, 0);
+	//Draw sheathe
+	model = translate(model, vec3(0.2, 0.0, 0.0));
+	shaderToUse.setMat4("model", model);
+	m.Draw(shaderToUse, 1);
 	
 	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 

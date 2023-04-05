@@ -19,6 +19,10 @@ struct MTexture
 	unsigned int id;
 	string type;
 	string path; //store path of texture to compare with other queries of the same texture
+	bool operator==(const MTexture& T1)
+	{
+		return this->path == T1.path;
+	}
 };
 
 class Mesh
