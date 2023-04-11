@@ -16,11 +16,19 @@ class Model
 {
 public:
 
+	/* Must load textures before calling loadModel() */
 	Model();
+
 	Model(const char* path);
 	/* meshToDraw is to be used when only a certain mesh from a model wants to be drawn. Leave as default to render every mesh. 
 	If the value given is too high, then default behaviour of drawing the whole mesh is used*/
 	void Draw(Shader& shader, int meshToDraw = -1);
+
+	void loadModel(string path);
+
+	void setDiffuseDirectory(const string& directory);
+	void setSpecularDirectory(const string& directory);
+	void setOpacityDirectory(const string& directory);
 
 private:
 	//model data
@@ -28,7 +36,10 @@ private:
 	vector<MTexture> textures_loaded; //stores loaded textures 
 	string directory;
 
-	void loadModel(string path);
+	string diffuseDirectory;
+	string specularDirectory;
+	string opacityDirectory;
+
 	void processNode(aiNode* node, const aiScene* scene);
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
 	vector<MTexture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName);

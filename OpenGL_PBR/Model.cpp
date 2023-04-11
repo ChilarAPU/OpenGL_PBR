@@ -27,6 +27,22 @@ void Model::Draw(Shader& shader, int meshToDraw)
 	{
 		meshes[i].Draw(shader);
 	}
+
+}
+
+void Model::setDiffuseDirectory(const string& directory)
+{
+	this->diffuseDirectory = directory;
+}
+
+void Model::setSpecularDirectory(const string& directory)
+{
+	this->specularDirectory = directory;
+}
+
+void Model::setOpacityDirectory(const string& directory)
+{
+	this->opacityDirectory = directory;
 }
 
 void Model::loadModel(string path)
@@ -129,16 +145,27 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 	//Setup texture directly, ignoring the .mtl file
 
 	//diffuse
-	TextureLoadReturn texture = loadTexture(aiTextureType_DIFFUSE, "../textures/swordTextures/Albedo.png");
+	TextureLoadReturn texture = loadTexture(aiTextureType_DIFFUSE, diffuseDirectory);
 	if (texture.bIsNewTexture)
 	{
 		textures.push_back(texture.texture);
 	}
 	//specular
-	texture = loadTexture(aiTextureType_SPECULAR, "../textures/swordTextures/Metallic.png");
-	if (texture.bIsNewTexture)
+	if (!specularDirectory.empty())
 	{
-		textures.push_back(texture.texture);
+		texture = loadTexture(aiTextureType_SPECULAR, specularDirectory);
+			if (texture.bIsNewTexture)
+			{
+			textures.push_back(texture.texture);
+			}
+	}
+	if (!opacityDirectory.empty())
+	{
+		texture = loadTexture(aiTextureType_OPACITY, opacityDirectory);
+		if (texture.bIsNewTexture)
+		{
+			textures.push_back(texture.texture);
+		}
 	}
 	
 	return Mesh(vertices, indices, textures);
@@ -207,7 +234,7 @@ unsigned int Model::TextureFromFile(const char* path, const string& directory, b
 	//filename = directory + '/' + filename;
 	cout << filename << endl;
 
-	stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(false);
 
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
@@ -238,6 +265,7 @@ unsigned int Model::TextureFromFile(const char* path, const string& directory, b
 	else
 	{
 		std::cout << "Texture failed to load at path: " << path << std::endl;
+		cout << stbi_failure_reason() << endl;
 		free(data);
 	}
 

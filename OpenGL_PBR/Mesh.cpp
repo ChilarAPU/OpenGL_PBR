@@ -22,6 +22,7 @@ void Mesh::Draw(Shader& shader)
 	*/
 	unsigned int diffuseNr = 1;
 	unsigned int specularNr = 1;
+	unsigned int opacityNr = 1;
 	for (unsigned int i = 0; i < textures.size(); i++)
 	{
 		//Get current texture unit to bind buffer to
@@ -37,11 +38,14 @@ void Mesh::Draw(Shader& shader)
 		{
 			number = to_string(specularNr++);
 		}
+		else if (name == "texture_opacity")
+		{
+			number = to_string(opacityNr++);
+		}
 		//Send texture over to fragment shader
 		shader.setInt(("material." + name + number).c_str(), i);
 		glBindTexture(GL_TEXTURE_2D, textures[i].id);
 	}
-
 	//reset active texture ready for next call
 	glActiveTexture(GL_TEXTURE0);
 

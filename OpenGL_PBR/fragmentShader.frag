@@ -10,6 +10,7 @@ struct Material
 	sampler2D diffuse; 
 	sampler2D specular;
 	sampler2D emissive;
+	sampler2D opacity;
 	float shininess;
 };
 
@@ -56,6 +57,9 @@ uniform SpotLight spotLight;
 uniform Material material;
 uniform vec3 viewPos;
 
+uniform sampler2D grassTexture; 
+uniform bool bIsTransparent;
+
 //uniform sampler2D texture_diffuse1;
 
 // Give attenuation a default value as not every light caster uses it
@@ -84,9 +88,30 @@ void main()
 	}
 	//SpotLights
 	//result += calculateSpotLight(spotLight, norm, FragPos, viewDir);
+	//FragColor = vec4(result, 1.0);
+	if (!bIsTransparent)
+	{
+		FragColor = vec4(result, 1.0);
+	}
+	else
+	{
+		vec4 texColor = texture(material.opacity, texCoord);
+		//if (texColor.a < 0.1)
+		//{
+			//discard;
+		//}
 
-	FragColor = vec4(result, 1.0);
-	//FragColor = vec4(texture(material.specular, texCoord));
+		FragColor = texColor;
+	}
+
+	//FragColor = vec4(texture(material.diffuse, texCoord));
+	
+	//Transform depth testing back to linear curve
+	//float ndc = gl_FragCoord.z * 2.0 - 1.0;
+	//float linearDepth = (2.0 * 0.1 * 100) / (100 + 0.1 - ndc * (100 - 0.1));
+	//float depth = linearDepth / 50.0;
+
+	//FragColor = vec4(vec3(depth), 1.0);
 
 }
 

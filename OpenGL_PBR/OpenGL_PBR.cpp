@@ -7,6 +7,7 @@
 #define STB_IMAGE_IMPLEMENTATION //Effectively turns header file into a cpp file
 #include <STB/stb_image.h>
 #include <assimp/config.h>
+#include <map>
 
 #include "Shader.h"
 #include "Camera.h"
@@ -39,48 +40,48 @@ void bindCubeToVAO(unsigned int& vao);
 
 //temporary place for object buffer data
 float Cubevertices[] = {
-	// positions          // normals           // texture coords
--0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
- 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
- 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
- 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
--0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
--0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-
--0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
- 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
- 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
- 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
--0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
--0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-
--0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
--0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
--0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
--0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
--0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
--0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
- 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
- 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
- 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
- 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
- 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
- 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
--0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
- 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
- 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
- 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
--0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
--0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-
--0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
- 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
- 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
- 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
--0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
--0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
+	// Back face
+	   -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
+		0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+		0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right         
+		0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+	   -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
+	   -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+	   // Front face
+	   -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+		0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+		0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+		0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+	   -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left
+	   -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+	   // Left face
+	   -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+	   -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left
+	   -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+	   -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+	   -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+	   -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+	   // Right face
+		0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+		0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+		0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right         
+		0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+		0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+		0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left     
+		// Bottom face
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+		// Top face
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right     
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left       
 };
 
 vec3 cubePositions[] = {
@@ -110,12 +111,29 @@ vec3 pointLightColorss[] = {
 	vec3(1.0f,  0.0f, 1.0f)
 };
 
+float transparentVertices[] = {
+	// positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+	0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+	0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+	1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+	0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+	1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+	1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+};
+
+vector<vec3> vegetation;
+
 //temporary place for buffer objects
 unsigned int VAO;
 unsigned int lightVAO;
+unsigned int vegetationVAO;
 unique_ptr<Texture> cubeDiffuse(new Texture());
 unique_ptr<Texture> cubeSpecular(new Texture());
 unique_ptr<Texture> cubeEmissive(new Texture());
+unique_ptr<Texture> grassTexture(new Texture());
+
+Model* windowModel = new Model();
 
 unsigned int fps;
 float frameTime = 0;
@@ -129,6 +147,8 @@ float lastFrame = 0.0f; //Time of last frame
 Camera* camera = new Camera(vec3(0.0, 0.0, 3.0), 45.f);
 
 Shader* lightShader;
+
+map<float, vec3> sortedWindows; //Holds a sorted map of window positions so that they can be drawn in the correct order
 
 int main() {
 
@@ -172,7 +192,49 @@ int main() {
 	//Scroll wheel callback
 	glfwSetScrollCallback(window, scrollCallback);
 
-	Model backpack("../textures/Katana_export.fbx");
+	//instanciate model class
+	Model* backpack = new Model();
+	//load model textures
+	backpack->setDiffuseDirectory("../textures/swordTextures/Albedo.png");
+	backpack->setSpecularDirectory("../textures/swordTextures/Metallic.png");
+	//load model into buffers
+	backpack->loadModel("../textures/Katana_export.fbx");
+
+	//load window model
+
+	//temporary grass locations
+	vegetation.push_back(vec3(-1.5f, 0.0f, -0.48f));
+	vegetation.push_back(vec3(1.5f, 0.0f, 0.51f));
+	vegetation.push_back(vec3(0.0f, 0.0f, 0.7f));
+	vegetation.push_back(vec3(-0.3f, 0.0f, -2.3f));
+	vegetation.push_back(vec3(0.5f, 0.0f, -0.6f));
+
+	glGenVertexArrays(1, &vegetationVAO);
+	glBindVertexArray(vegetationVAO); //Bind VAO to store any subsequent VBO & EBO calls
+
+	unsigned int VBO;
+	glGenBuffers(1, &VBO); //Create a single buffer for the VBO
+	glBindBuffer(GL_ARRAY_BUFFER, VBO); // Bind Buffer to GL_ARRAY_BUFFER type
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	//storing texture coordinates into buffer
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5* sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	grassTexture->LoadTexture("../textures/blending_transparent_window.png");
+
+	//Sort locations into a sorted order form the location of the camera
+	for (int i = 0; i < vegetation.size(); i++)
+	{
+		float distance = length(camera->GetPosition() - vegetation[i]); //get distance from camera to window position
+		sortedWindows[distance] = vegetation[i];
+	}
 
 	//Run the window until explicitly told to stop
 	while (!glfwWindowShouldClose(window))  //Check if the window has been instructed to close
@@ -185,12 +247,29 @@ int main() {
 		processInput(window); //Process user inputs
 
 		glEnable(GL_DEPTH_TEST); //Tell OpenGL to use Z-Buffer
+		glDepthFunc(GL_LESS);
+
+		glEnable(GL_STENCIL_TEST); //Enable stencil testing to add outlines to lights
+
+		glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE); //Decides what to do when a stencil buffer either passes or fails
+		/* if the stencil test fails, do nothing. If the depth test fails, keep the stencil buffer object the same. This will
+		* result in the outline staying as an outline when hidden behind other objects that are not in the buffer. If both the stencil
+		* and depth test pass, then do the same as when the depth test fails except this time the original object will be in view.
+		*/
+
+		glEnable(GL_BLEND); //Allow for blending between colours with transparency
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO); //Only allow blending to affect alpha values
+
+		glEnable(GL_CULL_FACE); //enable face culling
+		glCullFace(GL_BACK); //Cull back faces
+		glFrontFace(GL_CW); //counter clockwise ordering of faces. This is the usual default bahaviour of exported models
 
 		//Clear colour buffer and depth buffer every frame before rendering
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-		display(currentShader, backpack);
+		display(currentShader, *backpack);
 
 		//temp looping timer
 		float now = glfwGetTime(); //Get time of current frame
@@ -266,6 +345,8 @@ void display(Shader shaderToUse, Model m)
 	//Wireframe Mode
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+	//Do not write to the stencil buffer for undesired objects (loaded models)
+	glStencilMask(0x00); //0x00 just means that we cannot update the stencil buffer
 
 	//Adjust uniform color value over time
 	float systemTime = glfwGetTime();
@@ -284,6 +365,7 @@ void display(Shader shaderToUse, Model m)
 
 	//Basic Rendering
 	shaderToUse.use();
+	shaderToUse.setBool("bIsTransparent", false);
 	//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 	glBindVertexArray(VAO);
 
@@ -345,19 +427,6 @@ void display(Shader shaderToUse, Model m)
 	shaderToUse.setVec3("spotLight.diffuse", vec3(1.0f));
 	shaderToUse.setVec3("spotLight.specular", vec3(1.0f));
 
-	//Draw multiple of the same object with varying translation vectors in world space
-	/*for (unsigned int i = 0; i < 10; i++)
-	{
-		mat4 model = mat4(1.0);
-		model = translate(model, cubePositions[i]); //set world position location of object
-		float angle = 20.f * i;
-		model = rotate(model, (float)glfwGetTime() * radians(angle), vec3(1.0f, 0.3f, 0.5f)); //Rotate object in world space
-		shaderToUse.setMat4("model", model);
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
-	*/
-
 	//Draw sword
 	mat4 model = mat4(1.0);
 	model = scale(model, vec3(3.0, 3.0, 3.0));
@@ -368,8 +437,6 @@ void display(Shader shaderToUse, Model m)
 	model = translate(model, vec3(0.2, 0.0, 0.0));
 	shaderToUse.setMat4("model", model);
 	m.Draw(shaderToUse, 1);
-	
-	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	//Use different shader for the source of the light
 	lightShader->use();
@@ -378,6 +445,12 @@ void display(Shader shaderToUse, Model m)
 	//Draw 4 cube lights at different positions with different colours
 	for (unsigned int i = 0; i < 4; i++)
 	{
+		//Draw objects as normal but writing them to the stencil buffer
+		
+		//Add cubes to stencil buffer
+		glStencilFunc(GL_ALWAYS, 1, 0xFF); //All stencils will pass the stencil test
+		glStencilMask(0xFF); //enable writing to the stencil buffer
+
 		//Scale light and move it in world space
 		mat4 model(1.0f);
 		model = translate(model, pointLightPositions[i]);
@@ -388,7 +461,43 @@ void display(Shader shaderToUse, Model m)
 		//call VAO that holds the buffer and draw it to the screen
 		glBindVertexArray(lightVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		//Draw scaled cube around object to act as an outline but not writing these to the stencil buffer
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF); //Pass if depth value is not equal to the stored depth
+		glStencilMask(0x00); //disable writing to the stencil buffer
+		glDisable(GL_DEPTH_TEST);
+		// Set colour of outline
+		lightShader->setVec3("lightColor", pointLightColorss[i] * vec3(0.5f)); //Get outline tint based on original colour
+		//Increase size of the cube
+		model = scale(model, vec3(1.2f));
+		lightShader->setMat4("model", model);
+		lightShader->use();
+		//Draw cube
+		glBindVertexArray(lightVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 0, 0xFF);
+		glEnable(GL_DEPTH_TEST);
 	}
+
+	//load multiple transparent grass
+	shaderToUse.use();
+	glBindVertexArray(vegetationVAO);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, grassTexture->GetID());
+	shaderToUse.setInt("grassTexture", 0);
+	shaderToUse.setBool("bIsTransparent", true);
+	//Loop through window position in the reverse order so that the furthest away windows are always drawn first
+	for (map<float, vec3>::reverse_iterator it = sortedWindows.rbegin(); it != sortedWindows.rend(); ++it)
+	{
+		model = mat4(1.0f);
+		model = translate(model, it->second);
+		shaderToUse.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		//This fixes the problem of windows not accounting for other windows that are behind them
+	}
+	shaderToUse.setBool("bIsTransparent", false);
 }
 
 void bindCubeToVAO(unsigned int& vao)
@@ -413,11 +522,11 @@ void bindCubeToVAO(unsigned int& vao)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	*/
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Cubevertices), Cubevertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	//storing texture coordinates into buffer
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
 	//normals
