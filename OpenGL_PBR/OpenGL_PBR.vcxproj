@@ -145,6 +145,8 @@
     <None Include="fragmentShader.frag" />
     <None Include="lightShader.frag" />
     <None Include="lightShader.vert" />
+    <None Include="screenSpaceShader.frag" />
+    <None Include="screenSpaceShader.vert" />
     <None Include="vertexShader.vert" />
   </ItemGroup>
   <ItemGroup>

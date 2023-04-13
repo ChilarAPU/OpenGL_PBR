@@ -122,12 +122,25 @@ float transparentVertices[] = {
 	1.0f,  0.5f,  0.0f,  1.0f,  0.0f
 };
 
+float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+	/// positions   // texCoords
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		-1.0f, -1.0f,  0.0f, 0.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f,
+
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f,
+		 1.0f,  1.0f,  1.0f, 1.0f
+};
+
 vector<vec3> vegetation;
 
 //temporary place for buffer objects
 unsigned int VAO;
 unsigned int lightVAO;
 unsigned int vegetationVAO;
+unsigned int screenQuadVAO;
+unsigned int textureColorbuffer;
 unique_ptr<Texture> cubeDiffuse(new Texture());
 unique_ptr<Texture> cubeSpecular(new Texture());
 unique_ptr<Texture> cubeEmissive(new Texture());
@@ -149,6 +162,10 @@ Camera* camera = new Camera(vec3(0.0, 0.0, 3.0), 45.f);
 Shader* lightShader;
 
 map<float, vec3> sortedWindows; //Holds a sorted map of window positions so that they can be drawn in the correct order
+
+unsigned int framebuffer; //custom framebuffer delcaration
+
+Shader* screenSpaceShader;
 
 int main() {
 
@@ -178,6 +195,8 @@ int main() {
 	Shader currentShader("vertexShader.vert", "fragmentShader.frag");
 	//Bind light shader
 	lightShader = new Shader("lightShader.vert", "lightShader.frag");
+
+	screenSpaceShader = new Shader("screenSpaceShader.vert", "screenSpaceShader.frag");
 
 	//temp FPS calc
 	float time = 1.f; //Time to delay for
@@ -230,11 +249,73 @@ int main() {
 	grassTexture->LoadTexture("../textures/blending_transparent_window.png");
 
 	//Sort locations into a sorted order form the location of the camera
+	//NEED TO CHANGE:: CURRENTLY IS ONLY SET ONCE AT THE BEGINNING OF THE RENDER AND NEVER UPDATED. NEEDS MORE CHECKING AND PERFORMANCE
+	//CONSIDERATIONS BEFORE PUTTING INSIDE THE RENDER LOOP AS MAP BECOMES A MEMORY HOG
 	for (int i = 0; i < vegetation.size(); i++)
 	{
 		float distance = length(camera->GetPosition() - vegetation[i]); //get distance from camera to window position
 		sortedWindows[distance] = vegetation[i];
 	}
+
+	//Generate VAO for screen space quad
+	unsigned int quadVBO;
+	glGenVertexArrays(1, &screenQuadVAO);
+	glGenBuffers(1, &quadVBO);
+	glBindVertexArray(screenQuadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	screenSpaceShader->setInt("screenTexture", 0);
+
+	//Create custom framebuffer
+	glGenFramebuffers(1, &framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	//Create attachment for framebuffer. Basically memory location buffer such as VAO
+
+	//texture attachment 
+	glGenTextures(1, &textureColorbuffer);
+	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+
+	//allocate memory for texture but do not fill it. Also set texture to size of viewport
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 800, 600, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	//attach color attachment to framebuffer from texture
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+
+	//glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	//glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+	//glBindTexture(GL_TEXTURE_2D, 0);
+
+	//renderbuffer object attachment
+	unsigned int rbo;
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+
+	//create depth and stencil renderbuffer object
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+	//Check that the current frambuffer checks the minimum requirements 
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete" << glCheckFramebufferStatus(GL_FRAMEBUFFER) << endl;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//End of framebuffer
 
 	//Run the window until explicitly told to stop
 	while (!glfwWindowShouldClose(window))  //Check if the window has been instructed to close
@@ -245,6 +326,14 @@ int main() {
 		lastFrame = currentFrame;
 
 		processInput(window); //Process user inputs
+		//draw scene into offscreen frame buffer
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		//glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
+
+		//Clear colour buffer and depth buffer every frame before rendering
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		glEnable(GL_DEPTH_TEST); //Tell OpenGL to use Z-Buffer
 		glDepthFunc(GL_LESS);
@@ -265,11 +354,20 @@ int main() {
 		glCullFace(GL_BACK); //Cull back faces
 		glFrontFace(GL_CW); //counter clockwise ordering of faces. This is the usual default bahaviour of exported models
 
-		//Clear colour buffer and depth buffer every frame before rendering
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
 		display(currentShader, *backpack);
+
+		//go to default framebuffer and render texture into visible window
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		screenSpaceShader->use(); //use screen space shader
+		glClear(GL_COLOR_BUFFER_BIT); //clear color bit of original buffer
+		glDisable(GL_DEPTH_TEST); //there will be no depth to destroy in screen space
+		glDisable(GL_CULL_FACE); //disable culling otherwise screenQuad will be automatically destroyed for being too close to camera
+		//render the quad to which the texture will be displayed
+		glBindVertexArray(screenQuadVAO);
+		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+		screenSpaceShader->setInt("screenTexture", 0);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		
 
 		//temp looping timer
 		float now = glfwGetTime(); //Get time of current frame
@@ -385,7 +483,7 @@ void display(Shader shaderToUse, Model m)
 	//lightColor.y = sin((glfwGetTime()) * 0.7f);
 	//lightColor.z = sin((glfwGetTime()) * 1.3f);
 
-	vec3 diffuseColor = lightColor * vec3(0.5f);
+	vec3 diffuseColor = lightColor * vec3(0.8f);
 	vec3 ambientColor = diffuseColor * vec3(0.7f);
 
 	shaderToUse.setVec3("viewPos", camera->GetPosition());
@@ -398,7 +496,7 @@ void display(Shader shaderToUse, Model m)
 	shaderToUse.setInt("material.emissive", 2);
 
 	//Directional Light
-	shaderToUse.setVec3("dirLight.direction", vec3(-0.2, -1.0, -0.3));
+	shaderToUse.setVec3("dirLight.direction", vec3(0.7f, 0.2f, 2.0f));
 	shaderToUse.setVec3("dirLight.ambient", ambientColor);
 	shaderToUse.setVec3("dirLight.diffuse", diffuseColor);
 	shaderToUse.setVec3("dirLight.specular", lightColor);
@@ -498,6 +596,7 @@ void display(Shader shaderToUse, Model m)
 		//This fixes the problem of windows not accounting for other windows that are behind them
 	}
 	shaderToUse.setBool("bIsTransparent", false);
+	
 }
 
 void bindCubeToVAO(unsigned int& vao)

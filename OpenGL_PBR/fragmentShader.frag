@@ -121,7 +121,7 @@ vec3 calculatePhongLighting(vec3 lightDir, vec3 normal, vec3 viewDir, vec3 ambie
 	float diff = max(dot(normal, lightDir), 0.0);
 	//specular
 	vec3 reflectDir = reflect(-lightDir, normal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+	float spec = pow(max(dot(viewDir, lightDir), 0.0), material.shininess);
 	//combine diffuse, specular and ambient
 	vec3 ambient = ambientColor * vec3(texture(material.diffuse, texCoord));
 	vec3 diffuse = diffuseColor * diff * vec3(texture(material.diffuse, texCoord));
@@ -144,12 +144,13 @@ vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 viewDir)
 vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
 	vec3 lightDir = normalize(light.position - fragPos); //Get direction based from position of light source and fragment position
+	vec3 halfwayDir = normalize(lightDir + viewDir); //get halfway vector to blinn-phong
 
 	//attenuation
 	float distance = length(light.position - FragPos);
 	float attenuation = 1.0 / (1.0f + 0.09f * distance + 0.032f * (distance * distance));
 
-	return calculatePhongLighting(lightDir, normal, viewDir, light.ambient, light.diffuse, light.specular, attenuation);
+	return calculatePhongLighting(halfwayDir, normal, viewDir, light.ambient, light.diffuse, light.specular, attenuation);
 }
 
 

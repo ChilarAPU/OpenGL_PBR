@@ -45,6 +45,8 @@
     <None Include="fragmentShader.frag" />
     <None Include="lightShader.frag" />
     <None Include="lightShader.vert" />
+    <None Include="screenSpaceShader.vert" />
+    <None Include="screenSpaceShader.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
