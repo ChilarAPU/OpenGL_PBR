@@ -1,9 +1,9 @@
 ﻿  OpenGL_PBR.cpp
-C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(204,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(322,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(371,13): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(448,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(511,71): warning C4305: 'argument': truncation from 'double' to 'T'
+C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(255,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(435,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(484,13): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(561,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\jwwhi\source\repos\OpenGL_PBR\OpenGL_PBR\OpenGL_PBR.cpp(624,71): warning C4305: 'argument': truncation from 'double' to 'T'
           with
           [
               T=float

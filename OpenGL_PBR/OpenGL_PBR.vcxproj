@@ -147,6 +147,8 @@
     <None Include="lightShader.vert" />
     <None Include="screenSpaceShader.frag" />
     <None Include="screenSpaceShader.vert" />
+    <None Include="skybox.frag" />
+    <None Include="skybox.vert" />
     <None Include="vertexShader.vert" />
   </ItemGroup>
   <ItemGroup>

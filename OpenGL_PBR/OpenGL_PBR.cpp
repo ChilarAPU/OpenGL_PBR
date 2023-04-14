@@ -18,8 +18,8 @@ using namespace std;
 using namespace glm;
 
 //Macros
-#define VIEWPORTHEIGHT 600
-#define VIEWPORTWIDTH 800
+#define VIEWPORTHEIGHT 720
+#define VIEWPORTWIDTH 1280	
 
 //Forward function declarations
 /* Called Whenever user changes the size of the viewport*/
@@ -133,6 +133,51 @@ float quadVertices[] = { // vertex attributes for a quad that fills the entire s
 		 1.0f,  1.0f,  1.0f, 1.0f
 };
 
+float skyboxVertices[] = {
+	// positions          
+	-1.0f,  1.0f, -1.0f,
+	-1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+
+	-1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
+
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+
+	-1.0f, -1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
+
+	-1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f, -1.0f,
+
+	-1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f
+};
+
 vector<vec3> vegetation;
 
 //temporary place for buffer objects
@@ -140,11 +185,15 @@ unsigned int VAO;
 unsigned int lightVAO;
 unsigned int vegetationVAO;
 unsigned int screenQuadVAO;
+unsigned int skyboxVAO;
 unsigned int textureColorbuffer;
+unsigned int rbo;
 unique_ptr<Texture> cubeDiffuse(new Texture());
 unique_ptr<Texture> cubeSpecular(new Texture());
 unique_ptr<Texture> cubeEmissive(new Texture());
 unique_ptr<Texture> grassTexture(new Texture());
+
+unsigned int cubemapTexture;
 
 Model* windowModel = new Model();
 
@@ -160,6 +209,8 @@ float lastFrame = 0.0f; //Time of last frame
 Camera* camera = new Camera(vec3(0.0, 0.0, 3.0), 45.f);
 
 Shader* lightShader;
+
+Shader* skyboxShader;
 
 map<float, vec3> sortedWindows; //Holds a sorted map of window positions so that they can be drawn in the correct order
 
@@ -283,7 +334,7 @@ int main() {
 	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
 
 	//allocate memory for texture but do not fill it. Also set texture to size of viewport
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 800, 600, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, VIEWPORTWIDTH, VIEWPORTHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -299,12 +350,12 @@ int main() {
 	//glBindTexture(GL_TEXTURE_2D, 0);
 
 	//renderbuffer object attachment
-	unsigned int rbo;
+	//unsigned int rbo;
 	glGenRenderbuffers(1, &rbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
 
 	//create depth and stencil renderbuffer object
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, VIEWPORTWIDTH, VIEWPORTHEIGHT);
 
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
@@ -316,6 +367,66 @@ int main() {
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	//End of framebuffer
+
+	//Create vector of cubemap locations in the order that OpenGL uses
+	vector<string> textures_faces;
+	textures_faces.push_back("../textures/anime-skybox/right.png");
+	textures_faces.push_back("../textures/anime-skybox/left.png");
+	textures_faces.push_back("../textures/anime-skybox/top.png");
+	textures_faces.push_back("../textures/anime-skybox/bottom.png");
+	textures_faces.push_back("../textures/anime-skybox/front.png");
+	textures_faces.push_back("../textures/anime-skybox/back.png");
+
+	//Create cubemap texture
+	glGenTextures(1, &cubemapTexture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+
+	//Assign each texture location to its corresponding texture target
+	int width, height, nrChannels;
+	unsigned char* data;
+	for (unsigned int i = 0; i < textures_faces.size(); i++)
+	{
+		data = stbi_load(textures_faces[i].c_str(), &width, &height, &nrChannels, 0);
+		if (data)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, width, height, 0,
+				GL_RGBA, GL_UNSIGNED_BYTE, data);
+			stbi_image_free(data);
+		}
+		else
+		{
+			std::cout << "Cubemap texture failed to load at path: " << textures_faces[i] << std::endl;
+			stbi_image_free(data);
+		}
+	} 
+
+	//assign cubemap texture parameters
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	//Bind VAO to skybox vertices
+	unsigned int skyboxVBO;
+	glGenVertexArrays(1, &skyboxVAO);
+	glGenBuffers(1, &skyboxVBO);
+	glBindVertexArray(skyboxVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	//Only using vertices for the skybox
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	//Unbind VAO and VBO
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	skyboxShader = new Shader("skybox.vert", "skybox.frag");
+	skyboxShader->use();
+	skyboxShader->setInt("skybox", 0);
+
 
 	//Run the window until explicitly told to stop
 	while (!glfwWindowShouldClose(window))  //Check if the window has been instructed to close
@@ -336,7 +447,7 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		glEnable(GL_DEPTH_TEST); //Tell OpenGL to use Z-Buffer
-		glDepthFunc(GL_LESS);
+		glDepthFunc(GL_LEQUAL); //Needed for skybox otherwise it has z-conflict with normal background
 
 		glEnable(GL_STENCIL_TEST); //Enable stencil testing to add outlines to lights
 
@@ -596,6 +707,21 @@ void display(Shader shaderToUse, Model m)
 		//This fixes the problem of windows not accounting for other windows that are behind them
 	}
 	shaderToUse.setBool("bIsTransparent", false);
+
+	//Draw skybox last
+	//Disable culling otherwise skyboxVAO is automatically removed
+	glDisable(GL_CULL_FACE); 
+	//glDepthMask(GL_FALSE);
+	skyboxShader->use();
+	skyboxShader->setMat4("projection", projection);
+	//Remove translation from the view matrix 
+	mat4 skyboxView = mat4(mat3(view));
+	skyboxShader->setMat4("view", skyboxView);
+	//Draw skybox cube
+	glBindVertexArray(skyboxVAO);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glDepthMask(GL_TRUE);
 	
 }
 
@@ -678,4 +804,9 @@ void processInput(GLFWwindow* window)
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) 
 {
 	glViewport(0, 0, width, height);
+	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
 }

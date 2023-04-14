@@ -47,6 +47,8 @@
     <None Include="lightShader.vert" />
     <None Include="screenSpaceShader.vert" />
     <None Include="screenSpaceShader.frag" />
+    <None Include="skybox.vert" />
+    <None Include="skybox.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
