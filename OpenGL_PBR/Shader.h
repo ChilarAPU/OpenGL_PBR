@@ -14,15 +14,15 @@ class Shader
 {
 private:
 
-	void ReadSourceFile(string& vertexFile, string& fragmentFile, const char* vertexPath, const char* fragmentPath);
+	void ReadSourceFile(string& vertexFile, string& fragmentFile, string& geometryFile, const char* vertexPath, const char* fragmentPath, const char* geometryPath);
 
-	void CompileShaders(const char* vertexCode, const char* fragmentCode);
+	void CompileShaders(const char* vertexCode, const char* fragmentCode, const char* geometryCode);
 
 public:
 	unsigned int ID;
 
 	//Default constructor 
-	Shader(const char* vertexPath, const char* fragmentPath);
+	Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr);
 
 	//Use/activate this shader class
 	void use();

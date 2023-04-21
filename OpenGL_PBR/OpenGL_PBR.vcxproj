@@ -143,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="fragmentShader.frag" />
+    <None Include="geometryShader.geom" />
     <None Include="lightShader.frag" />
     <None Include="lightShader.vert" />
     <None Include="screenSpaceShader.frag" />

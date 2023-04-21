@@ -42,7 +42,7 @@ public:
 
 	void MoveCameraInViewSpace(float yaw, float pitch);
 
-	void KeyboardMovement(EMovementDirection direction, float deltaTime);
+	void KeyboardMovement(EMovementDirection direction, float deltaTime, unsigned int uniformBuffer = 0);
 
 	//Add to the Current Position
 	void OffsetPosition(vec3 position);

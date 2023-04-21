@@ -29,6 +29,7 @@ public:
 	void setDiffuseDirectory(const string& directory);
 	void setSpecularDirectory(const string& directory);
 	void setOpacityDirectory(const string& directory);
+	void setMetallicDirectory(const string& directory);
 
 private:
 	//model data
@@ -39,12 +40,13 @@ private:
 	string diffuseDirectory;
 	string specularDirectory;
 	string opacityDirectory;
+	string metallicDirectory;
 
 	void processNode(aiNode* node, const aiScene* scene);
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
 	vector<MTexture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName);
 
-	TextureLoadReturn loadTexture(aiTextureType type, string pathToTexture);
+	TextureLoadReturn loadTexture(aiTextureType type, string pathToTexture, string typeName);
 
 	unsigned int TextureFromFile(const char* path, const string& directory, bool gamma = false);
 };

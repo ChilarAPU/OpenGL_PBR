@@ -1,4 +1,6 @@
+#include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "Camera.h"
 #include <iostream>
 
@@ -32,7 +34,7 @@ void Camera::MoveCameraInViewSpace(float yaw, float pitch)
 	rightVector = normalize(cross(frontVector, vec3(0.0, 1.0, 0.0))); //recalculate right vector
 }
 
-void Camera::KeyboardMovement(EMovementDirection direction, float deltaTime)
+void Camera::KeyboardMovement(EMovementDirection direction, float deltaTime, unsigned int uniformBuffer)
 {
 	float Speed = 2.f * deltaTime;
 	vec3 cameraUp = vec3(0.0, 1.0, 0.0);
@@ -51,6 +53,19 @@ void Camera::KeyboardMovement(EMovementDirection direction, float deltaTime)
 		OffsetPosition(-(normalize(cross(GetForwardVector(), cameraUp)) * Speed));
 		break;
 	}
+
+	//if using uniformBuffer, then update the memory accordingly
+	if (uniformBuffer == 0)
+	{
+		//no uniform buffer passed through / empty uniform buffer passed through
+		return;
+	}
+
+	//Update view matrix in uniform buffer
+	mat4 view = GetViewMatrix();
+	glBindBuffer(GL_UNIFORM_BUFFER, uniformBuffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, sizeof(mat4), sizeof(mat4), value_ptr(view));
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 vec3 Camera::GetPosition()

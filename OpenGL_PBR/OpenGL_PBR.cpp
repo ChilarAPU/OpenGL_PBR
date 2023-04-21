@@ -188,6 +188,7 @@ unsigned int screenQuadVAO;
 unsigned int skyboxVAO;
 unsigned int textureColorbuffer;
 unsigned int rbo;
+unsigned int uboMatrices; //Holds matrices that are not changed througout the program
 unique_ptr<Texture> cubeDiffuse(new Texture());
 unique_ptr<Texture> cubeSpecular(new Texture());
 unique_ptr<Texture> cubeEmissive(new Texture());
@@ -243,7 +244,7 @@ int main() {
 	cubeEmissive->BindTextureToBuffer(GL_TEXTURE2);
 	*/
 
-	Shader currentShader("vertexShader.vert", "fragmentShader.frag");
+	Shader currentShader("vertexShader.vert", "fragmentShader.frag", "geometryShader.geom");
 	//Bind light shader
 	lightShader = new Shader("lightShader.vert", "lightShader.frag");
 
@@ -266,11 +267,10 @@ int main() {
 	Model* backpack = new Model();
 	//load model textures
 	backpack->setDiffuseDirectory("../textures/swordTextures/Albedo.png");
-	backpack->setSpecularDirectory("../textures/swordTextures/Metallic.png");
+	//backpack->setSpecularDirectory("../textures/swordTextures/Metallic.png");
+	backpack->setMetallicDirectory("../textures/swordTextures/Metallic.png");
 	//load model into buffers
 	backpack->loadModel("../textures/Katana_export.fbx");
-
-	//load window model
 
 	//temporary grass locations
 	vegetation.push_back(vec3(-1.5f, 0.0f, -0.48f));
@@ -428,6 +428,33 @@ int main() {
 	skyboxShader->setInt("skybox", 0);
 
 
+	//Bind shader block to a specific slot inside OpenGL's binding points
+	currentShader.use();
+	unsigned int matrices_index = glGetUniformBlockIndex(currentShader.ID, "Matrices");
+	glUniformBlockBinding(currentShader.ID, matrices_index, 0);
+
+	//Create uniform buffer
+	glGenBuffers(1, &uboMatrices);
+	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+	glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(mat4), NULL, GL_STATIC_DRAW); //128 Bytes equates to two full 4x4 matrices
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	//Bind uniform buffer object to binding point 0
+	//glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboMatrices);
+	glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(mat4));
+
+	//Insert data into buffer
+	mat4 projection = perspective(camera->GetFOV(), (float)VIEWPORTWIDTH / (float)VIEWPORTHEIGHT, 0.1f, 100.f);
+	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4), value_ptr(projection));
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	mat4 view = camera->GetViewMatrix();
+	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+	glBufferSubData(GL_UNIFORM_BUFFER, sizeof(mat4), sizeof(mat4), value_ptr(view));
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+
 	//Run the window until explicitly told to stop
 	while (!glfwWindowShouldClose(window))  //Check if the window has been instructed to close
 	{
@@ -461,9 +488,11 @@ int main() {
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO); //Only allow blending to affect alpha values
 
-		glEnable(GL_CULL_FACE); //enable face culling
-		glCullFace(GL_BACK); //Cull back faces
-		glFrontFace(GL_CW); //counter clockwise ordering of faces. This is the usual default bahaviour of exported models
+		glEnable(GL_PROGRAM_POINT_SIZE); //Vizualize vertex points
+
+		//glEnable(GL_CULL_FACE); //enable face culling
+		//glCullFace(GL_BACK); //Cull front faces
+		//glFrontFace(GL_CCW); //counter clockwise ordering of faces. This is the usual default bahaviour of exported models
 
 		display(currentShader, *backpack);
 
@@ -579,8 +608,8 @@ void display(Shader shaderToUse, Model m)
 	glBindVertexArray(VAO);
 
 	//pass through view and projection matrix to shader
-	shaderToUse.setMat4("view", view);
-	shaderToUse.setMat4("projection", projection);
+	//shaderToUse.setMat4("view", view);
+	//shaderToUse.setMat4("projection", projection);
 
 	//Position of the light source
 	vec3 lightPos(1.2f, 1.0f, 2.0f);
@@ -722,7 +751,26 @@ void display(Shader shaderToUse, Model m)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glDepthMask(GL_TRUE);
-	
+
+	/* This fixes the skybox transparency issue but still results in overlapping skybox wasting
+	//load multiple transparent grass
+	shaderToUse.use();
+	glBindVertexArray(vegetationVAO);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, grassTexture->GetID());
+	shaderToUse.setInt("grassTexture", 0);
+	shaderToUse.setBool("bIsTransparent", true);
+	//Loop through window position in the reverse order so that the furthest away windows are always drawn first
+	for (map<float, vec3>::reverse_iterator it = sortedWindows.rbegin(); it != sortedWindows.rend(); ++it)
+	{
+		model = mat4(1.0f);
+		model = translate(model, it->second);
+		shaderToUse.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		//This fixes the problem of windows not accounting for other windows that are behind them
+	}
+	shaderToUse.setBool("bIsTransparent", false);
+	*/
 }
 
 void bindCubeToVAO(unsigned int& vao)
@@ -767,11 +815,21 @@ void bindCubeToVAO(unsigned int& vao)
 void scrollCallback(GLFWwindow* window, double xOffset, double yOffset)
 {
 	camera->AdjustFOV((float)yOffset, 45.0f);
+	//Adjust Camera FOV inside the buffer
+	mat4 projection = perspective(camera->GetFOV(), (float)VIEWPORTWIDTH / (float)VIEWPORTHEIGHT, 0.1f, 100.f);
+	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4), value_ptr(projection));
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void mouseCallback(GLFWwindow* window, double xPosition, double yPosition)
 {
 	camera->CalculateMouseAdjustment(xPosition, yPosition);
+	//adjust view matrix inside the uniform buffer
+	mat4 view = camera->GetViewMatrix();
+	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+	glBufferSubData(GL_UNIFORM_BUFFER, sizeof(mat4), sizeof(mat4), value_ptr(view));
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void processInput(GLFWwindow* window)
@@ -784,19 +842,19 @@ void processInput(GLFWwindow* window)
 	//call KeyboardMovement for basic movement on the camera
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
-		camera->KeyboardMovement(EMovementDirection::FORWARD, deltaTime);
+		camera->KeyboardMovement(EMovementDirection::FORWARD, deltaTime, uboMatrices);
 	}
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 	{
-		camera->KeyboardMovement(EMovementDirection::BACKWARD, deltaTime);
+		camera->KeyboardMovement(EMovementDirection::BACKWARD, deltaTime, uboMatrices);
 	}
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 	{
-		camera->KeyboardMovement(EMovementDirection::LEFT, deltaTime);
+		camera->KeyboardMovement(EMovementDirection::LEFT, deltaTime, uboMatrices);
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 	{
-		camera->KeyboardMovement(EMovementDirection::RIGHT, deltaTime);
+		camera->KeyboardMovement(EMovementDirection::RIGHT, deltaTime, uboMatrices);
 	}
 }
 

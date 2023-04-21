@@ -45,6 +45,11 @@ void Model::setOpacityDirectory(const string& directory)
 	this->opacityDirectory = directory;
 }
 
+void Model::setMetallicDirectory(const string& directory)
+{
+	this->metallicDirectory = directory;
+}
+
 void Model::loadModel(string path)
 {
 	Importer importer;
@@ -145,7 +150,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 	//Setup texture directly, ignoring the .mtl file
 
 	//diffuse
-	TextureLoadReturn texture = loadTexture(aiTextureType_DIFFUSE, diffuseDirectory);
+	TextureLoadReturn texture = loadTexture(aiTextureType_DIFFUSE, diffuseDirectory, "diffuse");
 	if (texture.bIsNewTexture)
 	{
 		textures.push_back(texture.texture);
@@ -153,15 +158,25 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 	//specular
 	if (!specularDirectory.empty())
 	{
-		texture = loadTexture(aiTextureType_SPECULAR, specularDirectory);
+		texture = loadTexture(aiTextureType_SPECULAR, specularDirectory, "specular");
 			if (texture.bIsNewTexture)
 			{
 			textures.push_back(texture.texture);
 			}
 	}
+	//opacity
 	if (!opacityDirectory.empty())
 	{
-		texture = loadTexture(aiTextureType_OPACITY, opacityDirectory);
+		texture = loadTexture(aiTextureType_OPACITY, opacityDirectory, "opacity");
+		if (texture.bIsNewTexture)
+		{
+			textures.push_back(texture.texture);
+		}
+	}
+	//metallic
+	if (!metallicDirectory.empty())
+	{
+		texture = loadTexture(aiTextureType_METALNESS, metallicDirectory, "metallic");
 		if (texture.bIsNewTexture)
 		{
 			textures.push_back(texture.texture);
@@ -204,11 +219,12 @@ vector<MTexture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type
 	return textures;
 }
 
-TextureLoadReturn Model::loadTexture(aiTextureType type, string pathToTexture)
+TextureLoadReturn Model::loadTexture(aiTextureType type, string pathToTexture, string typeName)
 {
 	//vector<MTexture> textures;
 	TextureLoadReturn texture;
 	texture.bIsNewTexture = true;
+
 	//MTexture texture;
 	//Check to make sure we have not already loaded the texture
 	texture.texture.path = pathToTexture;
@@ -222,7 +238,7 @@ TextureLoadReturn Model::loadTexture(aiTextureType type, string pathToTexture)
 	}
 	//load texture to textures_loaded
 	texture.texture.id = TextureFromFile(pathToTexture.c_str(), directory);
-	texture.texture.type = type;
+	texture.texture.type = typeName;
 	textures_loaded.push_back(texture.texture);
 
 	return texture;

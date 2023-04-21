@@ -23,6 +23,7 @@ void Mesh::Draw(Shader& shader)
 	unsigned int diffuseNr = 1;
 	unsigned int specularNr = 1;
 	unsigned int opacityNr = 1;
+	unsigned int metallicNr = 1;
 	for (unsigned int i = 0; i < textures.size(); i++)
 	{
 		//Get current texture unit to bind buffer to
@@ -30,20 +31,26 @@ void Mesh::Draw(Shader& shader)
 
 		string number;
 		string name = textures[i].type;
-		if (name == "texture_diffuse")
+		//If we want to use multiple of the same texture type
+		if (name == "diffuse")
 		{
 			number = to_string(diffuseNr++);
 		}
-		else if (name == "texture_specular")
+		else if (name == "specular")
 		{
 			number = to_string(specularNr++);
 		}
-		else if (name == "texture_opacity")
+		else if (name == "opacity")
 		{
 			number = to_string(opacityNr++);
 		}
+		else if (name == "metallic")
+		{
+			number = to_string(metallicNr++);
+		}
+
 		//Send texture over to fragment shader
-		shader.setInt(("material." + name + number).c_str(), i);
+		shader.setInt(("material." + name).c_str(), i);
 		glBindTexture(GL_TEXTURE_2D, textures[i].id);
 	}
 	//reset active texture ready for next call
@@ -67,6 +74,20 @@ void Mesh::setupMesh()
 	//Bind vertices to VBO
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
+
+	/* Fill buffer after initialization
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), NULL, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(Vertex), &vertices[0]);
+	*/
+
+	/* Manually copying data into buffer
+	//pointer to writable buffer
+	void *ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+	//copy data into buffer
+	memcpy(ptr, &vertices[0], vertices.size() * sizeof(Vertex));
+	//unmap buffer
+	glUnmapBuffer(GL_ARRAY_BUFFER);
+	*/
 
 	//Bind indices to EBO
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
