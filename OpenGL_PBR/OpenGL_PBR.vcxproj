@@ -151,6 +151,8 @@
     <None Include="skybox.frag" />
     <None Include="skybox.vert" />
     <None Include="vertexShader.vert" />
+    <None Include="visibleNormals.frag" />
+    <None Include="visibleNormals.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />

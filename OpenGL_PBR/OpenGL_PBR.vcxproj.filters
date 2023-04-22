@@ -50,6 +50,8 @@
     <None Include="skybox.vert" />
     <None Include="skybox.frag" />
     <None Include="geometryShader.geom" />
+    <None Include="visibleNormals.vert" />
+    <None Include="visibleNormals.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">

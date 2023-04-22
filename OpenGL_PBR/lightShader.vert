@@ -8,8 +8,12 @@ out vec3 vertexColor;
 out vec2 texCoord;
 
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+
+layout (std140) uniform Matrices
+{
+	mat4 projection;  //base allignment of 16 4 times, each with a different alligned offset
+	mat4 view;
+};
 
 void main()
 {

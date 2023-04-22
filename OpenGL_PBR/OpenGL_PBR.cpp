@@ -213,11 +213,16 @@ Shader* lightShader;
 
 Shader* skyboxShader;
 
+Shader* normalFaceShader;
+
 map<float, vec3> sortedWindows; //Holds a sorted map of window positions so that they can be drawn in the correct order
 
 unsigned int framebuffer; //custom framebuffer delcaration
+unsigned int intermediateFramebuffer; //custom framebuffer delcaration
 
 Shader* screenSpaceShader;
+
+unsigned int colorBuffer;
 
 int main() {
 
@@ -244,11 +249,13 @@ int main() {
 	cubeEmissive->BindTextureToBuffer(GL_TEXTURE2);
 	*/
 
-	Shader currentShader("vertexShader.vert", "fragmentShader.frag", "geometryShader.geom");
+	Shader currentShader("vertexShader.vert", "fragmentShader.frag");
 	//Bind light shader
 	lightShader = new Shader("lightShader.vert", "lightShader.frag");
 
 	screenSpaceShader = new Shader("screenSpaceShader.vert", "screenSpaceShader.frag");
+
+	normalFaceShader = new Shader("visibleNormals.vert", "visibleNormals.frag", "geometryShader.geom");
 
 	//temp FPS calc
 	float time = 1.f; //Time to delay for
@@ -322,8 +329,6 @@ int main() {
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	screenSpaceShader->setInt("screenTexture", 0);
-
 	//Create custom framebuffer
 	glGenFramebuffers(1, &framebuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
@@ -331,18 +336,19 @@ int main() {
 
 	//texture attachment 
 	glGenTextures(1, &textureColorbuffer);
-	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, textureColorbuffer);
 
 	//allocate memory for texture but do not fill it. Also set texture to size of viewport
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, VIEWPORTWIDTH, VIEWPORTHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, VIEWPORTWIDTH, VIEWPORTHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA, VIEWPORTWIDTH, VIEWPORTHEIGHT, GL_TRUE);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	//attach color attachment to framebuffer from texture
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, textureColorbuffer, 0);
 
 	//glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	//glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -355,7 +361,10 @@ int main() {
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
 
 	//create depth and stencil renderbuffer object
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, VIEWPORTWIDTH, VIEWPORTHEIGHT);
+	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, VIEWPORTWIDTH, VIEWPORTHEIGHT);
+	
+	//Create render buffer with multisampling set to 4
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, VIEWPORTWIDTH, VIEWPORTHEIGHT);
 
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
@@ -367,6 +376,35 @@ int main() {
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	//End of framebuffer
+
+	//Create intermediate framebuffer with only a color buffer
+	glGenFramebuffers(1, &intermediateFramebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+	glGenTextures(1, &colorBuffer);
+	glBindTexture(GL_TEXTURE_2D, colorBuffer);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, VIEWPORTWIDTH, VIEWPORTHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorBuffer, 0);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	//Check that the current frambuffer checks the minimum requirements 
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		cout << "ERROR::FRAMEBUFFER:: Intermediate Framebuffer is not complete" << glCheckFramebufferStatus(GL_FRAMEBUFFER) << endl;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	screenSpaceShader->use();
+	screenSpaceShader->setInt("screenTexture", 0);
 
 	//Create vector of cubemap locations in the order that OpenGL uses
 	vector<string> textures_faces;
@@ -454,6 +492,19 @@ int main() {
 	glBufferSubData(GL_UNIFORM_BUFFER, sizeof(mat4), sizeof(mat4), value_ptr(view));
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+	//Attach binding object to light and skybox shader
+	//lightShader
+	lightShader->use();
+	matrices_index = glGetUniformBlockIndex(lightShader->ID, "Matrices");
+	glUniformBlockBinding(lightShader->ID, matrices_index, 0);
+	//skyboxShader
+	skyboxShader->use();
+	matrices_index = glGetUniformBlockIndex(skyboxShader->ID, "Matrices");
+	glUniformBlockBinding(skyboxShader->ID, matrices_index, 0);
+
+	normalFaceShader->use();
+	matrices_index = glGetUniformBlockIndex(normalFaceShader->ID, "Matrices");
+	glUniformBlockBinding(normalFaceShader->ID, matrices_index, 0);
 
 	//Run the window until explicitly told to stop
 	while (!glfwWindowShouldClose(window))  //Check if the window has been instructed to close
@@ -464,6 +515,10 @@ int main() {
 		lastFrame = currentFrame;
 
 		processInput(window); //Process user inputs
+
+		//Tell OpenGL to enable multisample buffers
+		glEnable(GL_MULTISAMPLE);
+
 		//draw scene into offscreen frame buffer
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -490,11 +545,17 @@ int main() {
 
 		glEnable(GL_PROGRAM_POINT_SIZE); //Vizualize vertex points
 
+
 		//glEnable(GL_CULL_FACE); //enable face culling
 		//glCullFace(GL_BACK); //Cull front faces
 		//glFrontFace(GL_CCW); //counter clockwise ordering of faces. This is the usual default bahaviour of exported models
 
 		display(currentShader, *backpack);
+
+		//Blit multisampled frameburffer to default framebuffer
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFramebuffer);
+		glBlitFramebuffer(0, 0, VIEWPORTWIDTH, VIEWPORTHEIGHT, 0, 0, VIEWPORTWIDTH, VIEWPORTHEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 		//go to default framebuffer and render texture into visible window
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -504,7 +565,7 @@ int main() {
 		glDisable(GL_CULL_FACE); //disable culling otherwise screenQuad will be automatically destroyed for being too close to camera
 		//render the quad to which the texture will be displayed
 		glBindVertexArray(screenQuadVAO);
-		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+		glBindTexture(GL_TEXTURE_2D, colorBuffer);
 		screenSpaceShader->setInt("screenTexture", 0);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		
@@ -553,6 +614,9 @@ void initWindow(GLFWwindow*& window)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	//Set OpenGL to core as opposed to compatibility mode
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	//Tell GLFW we want to use a multisample buffer of 4 as opposed to the default 1
+	glfwWindowHint(GLFW_SAMPLES, 4);
 
 	//Create window object at the size of 800 x 600
 	window = glfwCreateWindow(VIEWPORTWIDTH, VIEWPORTHEIGHT, "OpenGL_PBR", NULL, NULL);
@@ -608,8 +672,6 @@ void display(Shader shaderToUse, Model m)
 	glBindVertexArray(VAO);
 
 	//pass through view and projection matrix to shader
-	//shaderToUse.setMat4("view", view);
-	//shaderToUse.setMat4("projection", projection);
 
 	//Position of the light source
 	vec3 lightPos(1.2f, 1.0f, 2.0f);
@@ -676,10 +738,20 @@ void display(Shader shaderToUse, Model m)
 	shaderToUse.setMat4("model", model);
 	m.Draw(shaderToUse, 1);
 
+	//Draw sword again but this time with the geometry normal shader
+	/*normalFaceShader->use();
+	model = mat4(1.0);
+	model = scale(model, vec3(3.0, 3.0, 3.0));
+	model = rotate(model, (float)radians(90.f), vec3(1.0f, 0.0, 0.0));
+	normalFaceShader->setMat4("model", model);
+	m.Draw(*normalFaceShader, 0);
+	model = translate(model, vec3(0.2, 0.0, 0.0));
+	normalFaceShader->setMat4("model", model);
+	m.Draw(*normalFaceShader, 1);
+	*/
+
 	//Use different shader for the source of the light
 	lightShader->use();
-	lightShader->setMat4("projection", projection);
-	lightShader->setMat4("view", view);
 	//Draw 4 cube lights at different positions with different colours
 	for (unsigned int i = 0; i < 4; i++)
 	{
@@ -720,7 +792,7 @@ void display(Shader shaderToUse, Model m)
 	}
 
 	//load multiple transparent grass
-	shaderToUse.use();
+	/*shaderToUse.use();
 	glBindVertexArray(vegetationVAO);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, grassTexture->GetID());
@@ -736,13 +808,13 @@ void display(Shader shaderToUse, Model m)
 		//This fixes the problem of windows not accounting for other windows that are behind them
 	}
 	shaderToUse.setBool("bIsTransparent", false);
+	*/
 
 	//Draw skybox last
 	//Disable culling otherwise skyboxVAO is automatically removed
 	glDisable(GL_CULL_FACE); 
 	//glDepthMask(GL_FALSE);
 	skyboxShader->use();
-	skyboxShader->setMat4("projection", projection);
 	//Remove translation from the view matrix 
 	mat4 skyboxView = mat4(mat3(view));
 	skyboxShader->setMat4("view", skyboxView);
@@ -752,7 +824,7 @@ void display(Shader shaderToUse, Model m)
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glDepthMask(GL_TRUE);
 
-	/* This fixes the skybox transparency issue but still results in overlapping skybox wasting
+	//This fixes the skybox transparency issue but still results in overlapping skybox wasting
 	//load multiple transparent grass
 	shaderToUse.use();
 	glBindVertexArray(vegetationVAO);
@@ -770,7 +842,7 @@ void display(Shader shaderToUse, Model m)
 		//This fixes the problem of windows not accounting for other windows that are behind them
 	}
 	shaderToUse.setBool("bIsTransparent", false);
-	*/
+	
 }
 
 void bindCubeToVAO(unsigned int& vao)
