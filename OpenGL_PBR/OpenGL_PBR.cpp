@@ -282,7 +282,7 @@ int main() {
 	//temporary grass locations
 	vegetation.push_back(vec3(-1.5f, 0.0f, -0.48f));
 	vegetation.push_back(vec3(1.5f, 0.0f, 0.51f));
-	vegetation.push_back(vec3(0.0f, 0.0f, 0.7f));
+	//vegetation.push_back(vec3(0.0f, 0.0f, 0.7f));
 	vegetation.push_back(vec3(-0.3f, 0.0f, -2.3f));
 	vegetation.push_back(vec3(0.5f, 0.0f, -0.6f));
 
@@ -519,6 +519,8 @@ int main() {
 		//Tell OpenGL to enable multisample buffers
 		glEnable(GL_MULTISAMPLE);
 
+		//glEnable(GL_FRAMEBUFFER_SRGB); //Using OpenGL's built in gamma correction sRGB tool
+
 		//draw scene into offscreen frame buffer
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -559,6 +561,7 @@ int main() {
 
 		//go to default framebuffer and render texture into visible window
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		//glEnable(GL_FRAMEBUFFER_SRGB); //Enable gamma correction only on final framebuffer output
 		screenSpaceShader->use(); //use screen space shader
 		glClear(GL_COLOR_BUFFER_BIT); //clear color bit of original buffer
 		glDisable(GL_DEPTH_TEST); //there will be no depth to destroy in screen space
@@ -568,7 +571,7 @@ int main() {
 		glBindTexture(GL_TEXTURE_2D, colorBuffer);
 		screenSpaceShader->setInt("screenTexture", 0);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		
+		//glDisable(GL_FRAMEBUFFER_SRGB); //Disable gamma correction for next frame
 
 		//temp looping timer
 		float now = glfwGetTime(); //Get time of current frame
