@@ -198,6 +198,8 @@ unsigned int cubemapTexture;
 
 Model* windowModel = new Model();
 
+Model* floorModel = new Model();
+
 unsigned int fps;
 float frameTime = 0;
 
@@ -223,6 +225,7 @@ unsigned int intermediateFramebuffer; //custom framebuffer delcaration
 Shader* screenSpaceShader;
 
 unsigned int colorBuffer;
+
 
 int main() {
 
@@ -278,6 +281,10 @@ int main() {
 	backpack->setMetallicDirectory("../textures/swordTextures/Metallic.png");
 	//load model into buffers
 	backpack->loadModel("../textures/Katana_export.fbx");
+
+	floorModel->setDiffuseDirectory("../textures/floor_diffuse.png");
+	floorModel->bIsInstanced = true; //Tell Model class that this should be instanced
+	floorModel->loadModel("../textures/floor.obj");
 
 	//temporary grass locations
 	vegetation.push_back(vec3(-1.5f, 0.0f, -0.48f));
@@ -740,6 +747,16 @@ void display(Shader shaderToUse, Model m)
 	model = translate(model, vec3(0.2, 0.0, 0.0));
 	shaderToUse.setMat4("model", model);
 	m.Draw(shaderToUse, 1);
+
+	//Draw floor model
+	/*model = mat4(1.0);
+	model = translate(model, vec3(1.0, -2.0, 1.0));
+	model = scale(model, vec3(0.3, 0.3, 0.3));
+	shaderToUse.setMat4("model", model);
+	floorModel->Draw(shaderToUse);
+	*/
+
+	floorModel->Draw(shaderToUse, -1, true);
 
 	//Draw sword again but this time with the geometry normal shader
 	/*normalFaceShader->use();

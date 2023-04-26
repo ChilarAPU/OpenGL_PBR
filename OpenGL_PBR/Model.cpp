@@ -7,6 +7,7 @@
 using namespace Assimp;
 
 Model::Model()
+	: bIsInstanced(false)
 {
 }
 
@@ -15,17 +16,17 @@ Model::Model(const char* path)
 	loadModel(path);
 }
 
-void Model::Draw(Shader& shader, int meshToDraw)
+void Model::Draw(Shader& shader, int meshToDraw, bool bInstanced)
 {
 	//Loop over each mesh in the model and render it to the screen
 	if (meshToDraw < meshes.size())
 	{
-		meshes[meshToDraw].Draw(shader);
+		meshes[meshToDraw].Draw(shader, bInstanced);
 		return;
 	}
 	for (unsigned int i = 0; i < meshes.size(); i++)
 	{
-		meshes[i].Draw(shader);
+		meshes[i].Draw(shader, bInstanced);
 	}
 
 }
@@ -48,6 +49,16 @@ void Model::setOpacityDirectory(const string& directory)
 void Model::setMetallicDirectory(const string& directory)
 {
 	this->metallicDirectory = directory;
+}
+
+unsigned int Model::GetVAO()
+{
+	return meshes.at(0).GetVAO();
+}
+
+vector<unsigned int> Model::GetIndices()
+{
+	return meshes.at(0).GetIndices();
 }
 
 void Model::loadModel(string path)
@@ -183,7 +194,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		}
 	}
 	
-	return Mesh(vertices, indices, textures);
+	return Mesh(vertices, indices, textures, bIsInstanced);
 }
 
 vector<MTexture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName)
@@ -247,8 +258,7 @@ TextureLoadReturn Model::loadTexture(aiTextureType type, string pathToTexture, s
 unsigned int Model::TextureFromFile(const char* path, const string& directory, bool gamma)
 {
 	string filename = string(path);
-	//filename = directory + '/' + filename;
-	cout << filename << endl;
+	filename = directory + '/' + filename;
 
 	stbi_set_flip_vertically_on_load(false);
 
@@ -265,7 +275,8 @@ unsigned int Model::TextureFromFile(const char* path, const string& directory, b
 		else if (nrComponents == 3)
 			format = GL_RGB;
 		else if (nrComponents == 4)
-			format = GL_SRGB_ALPHA; //Specifying we are using sRGB textures. Only do this for diffuse otherwise lighting will have undesirable results
+			//format = GL_SRGB_ALPHA; //Specifying we are using sRGB textures. Only do this for diffuse otherwise lighting will have undesirable results
+			format = GL_RGBA;
 
 		glBindTexture(GL_TEXTURE_2D, textureID);
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
@@ -277,6 +288,10 @@ unsigned int Model::TextureFromFile(const char* path, const string& directory, b
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		free(data);
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		cout << filename << " loaded" << endl;
 	}
 	else
 	{

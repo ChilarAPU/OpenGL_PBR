@@ -139,6 +139,8 @@ void main()
 		//FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 	//}
 
+	//FragColor = vec4(vec3(texture(material.diffuse, fs_in.texCoord)), 1.0);
+
 	//Adjust FragColor based on whether face is front or back facing.
 	if (!gl_FrontFacing)
 	{

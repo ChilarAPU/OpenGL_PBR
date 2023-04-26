@@ -22,7 +22,7 @@ public:
 	Model(const char* path);
 	/* meshToDraw is to be used when only a certain mesh from a model wants to be drawn. Leave as default to render every mesh. 
 	If the value given is too high, then default behaviour of drawing the whole mesh is used*/
-	void Draw(Shader& shader, int meshToDraw = -1);
+	void Draw(Shader& shader, int meshToDraw = -1, bool bInstanced = false);
 
 	void loadModel(string path);
 
@@ -30,6 +30,11 @@ public:
 	void setSpecularDirectory(const string& directory);
 	void setOpacityDirectory(const string& directory);
 	void setMetallicDirectory(const string& directory);
+
+	bool bIsInstanced;
+
+	unsigned int GetVAO();
+	vector<unsigned int> GetIndices();
 
 private:
 	//model data

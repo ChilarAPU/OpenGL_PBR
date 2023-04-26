@@ -1,6 +1,6 @@
 #include "Mesh.h"
 
-Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<MTexture> textures)
+Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<MTexture> textures, bool bInstanced)
 {
 	this->vertices = vertices;
 	this->indices = indices;
@@ -12,9 +12,14 @@ Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<MTextur
 	VAO = 0;
 
 	setupMesh();
+	//if we are instanced, run the instanced code ontop
+	if (bInstanced)
+	{
+		setupInstancedMesh();
+	}
 }
 
-void Mesh::Draw(Shader& shader)
+void Mesh::Draw(Shader& shader, bool bInstanced)
 {
 	/* 
 		ADJUST THIS! REQUIRES SPECIFIC STRINGS TO BE SET 
@@ -49,6 +54,23 @@ void Mesh::Draw(Shader& shader)
 			number = to_string(metallicNr++);
 		}
 
+		if (diffuseNr == 1)
+		{
+			shader.setInt(("material.diffuse"), 0);
+		}
+		else if (specularNr == 1)
+		{
+			shader.setInt(("material.specular"), 0);
+		}
+		else if (opacityNr == 1)
+		{
+			shader.setInt(("material.opacity"), 0);
+		}
+		else if (metallicNr == 1)
+		{
+			shader.setInt(("material.metallic"), 0);
+		}
+
 		//Send texture over to fragment shader
 		shader.setInt(("material." + name).c_str(), i);
 		glBindTexture(GL_TEXTURE_2D, textures[i].id);
@@ -56,10 +78,30 @@ void Mesh::Draw(Shader& shader)
 	//reset active texture ready for next call
 	glActiveTexture(GL_TEXTURE0);
 
-	//draw mesh
-	glBindVertexArray(VAO);
-	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
+	if (!bInstanced)
+	{
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+	}
+	else
+	{
+		shader.setBool("bInstance", true);
+		glBindVertexArray(VAO);
+		glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0, 50);
+		glBindVertexArray(0);
+		shader.setBool("bInstance", false);
+	}
+}
+
+unsigned int Mesh::GetVAO()
+{
+	return this->VAO;
+}
+
+vector<unsigned int> Mesh::GetIndices()
+{
+	return indices;
 }
 
 void Mesh::setupMesh()
@@ -109,4 +151,73 @@ void Mesh::setupMesh()
 	//Unbind VAO to stop accidental calls to buffer
 	glBindVertexArray(0);
 
+}
+
+void Mesh::setupInstancedMesh()
+{
+	//Temporary way to store the instanced model matrices until a custom instanced class is made
+	vector<vec3> floorVerts;
+	vector<mat4> floorModelMats;
+	//Temp way to initialize floor instance locations
+	int floorWidth = 5; //How wide the floor should be 
+	float vertValue = 1.0; //To place floor left
+	float HoriValue = 1.5; //To place floor behind
+	floorVerts.emplace_back(vec3(1.0, -2.0, 2.5)); //push starting value
+	for (int i = 0; i < 50; i++) //Create 50 floors
+	{
+		float mod = i % floorWidth; //Have we reached maximum width
+		if (mod != 0)
+		{
+			//Add floor horizontally
+			vec3 prev = floorVerts.at(i); //access previous value
+			vec3 newVert = prev;
+			newVert.x -= vertValue;
+			floorVerts.push_back(newVert);
+			//trying with model matrix instead
+			mat4 model = mat4(1.0);
+			model = translate(model, newVert);
+			model = scale(model, vec3(0.3, 0.3, 0.3));
+			floorModelMats.push_back(model);
+		}
+		else
+		{
+			// Add Floor vertically
+			vec3 prev = floorVerts.at(i); //access previous value
+			vec3 newVert = prev;
+			newVert.x = 1.0; //TEMP WAY TO REVERT HORIZONAL VALUE
+			newVert.z -= HoriValue;
+			floorVerts.push_back(newVert);
+			//trying with model matrix instead
+			mat4 model = mat4(1.0);
+			model = translate(model, newVert);
+			model = scale(model, vec3(0.3, 0.3, 0.3));
+			floorModelMats.push_back(model);
+		}
+	}
+
+	unsigned int buffer;
+	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glBufferData(GL_ARRAY_BUFFER, floorModelMats.size() * sizeof(mat4), &floorModelMats.at(0), GL_STATIC_DRAW);
+
+	//Temp way to pass through vertices to vertex shader
+	glBindVertexArray(VAO);
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)0);
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(vec4)));
+	glEnableVertexAttribArray(5);
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(2 * sizeof(vec4)));
+	glEnableVertexAttribArray(6);
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(3 * sizeof(vec4)));
+
+	//Tell OpenGL that we want to update the value every instance
+	glVertexAttribDivisor(3, 1);
+	glVertexAttribDivisor(4, 1);
+	glVertexAttribDivisor(5, 1);
+	glVertexAttribDivisor(6, 1);
+
+	glBindVertexArray(0);
+
+	glBindVertexArray(VAO);
 }

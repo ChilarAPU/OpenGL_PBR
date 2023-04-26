@@ -33,15 +33,20 @@ public:
 	vector<unsigned int> indices;
 	vector<MTexture> textures;
 
-	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<MTexture> textures);
+	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<MTexture> textures, bool bInstanced);
 	//Draw mesh to viewport
-	void Draw(Shader& shader);
+	void Draw(Shader& shader, bool bInstanced);
+
+	unsigned int GetVAO();
+	vector<unsigned int> GetIndices();
 private:
 	//render data
 	unsigned int VAO, VBO, EBO;
 
 	// Setup OpenGL buffers 
 	void setupMesh();
+
+	void setupInstancedMesh();
 
 };
 

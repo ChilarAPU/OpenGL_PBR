@@ -3,6 +3,7 @@
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aTexCoord;
+layout (location = 3) in mat4 instanceMatrix; //Used with instancing, takes up slot 3, 4, 5 and 6
 
 uniform mat4 model;
 //uniform mat4 view;
@@ -22,13 +23,24 @@ out VS_OUT
 	vec3 FragPos; //Position of fragment in world space
 } vs_out;
 
+uniform bool bInstance = false;
+
 void main()
 {
-	gl_Position = projection * view * model * vec4(aPos, 1.0f);
+	if (!bInstance)
+	{
+		gl_Position = projection * view * model * vec4(aPos, 1.0f);
+		vs_out.Normal = mat3(transpose(inverse(model))) * aNormal; //this calculation deals with non-uniform scaling 
+		vs_out.FragPos = vec3(model * vec4(aPos, 1.0)); //Position value in world space coordinates that can be used by the fragment shader
+	}
+	else
+	{
+		gl_Position = projection * view * instanceMatrix * vec4(aPos, 1.0f);
+		vs_out.Normal = mat3(transpose(inverse(instanceMatrix))) * aNormal; //this calculation deals with non-uniform scaling 
+		vs_out.FragPos = vec3(instanceMatrix * vec4(aPos, 1.0)); //Position value in world space coordinates that can be used by the fragment shader
+	}
 	vs_out.texCoord = aTexCoord;
-	vs_out.Normal = mat3(transpose(inverse(model))) * aNormal; //this calculation deals with non-uniform scaling 
 	//mulitply position of incoming vertex by the model matrix
-	vs_out.FragPos = vec3(model * vec4(aPos, 1.0)); //Position value in world space coordinates that can be used by the fragment shader
 	//Increase point size the further away the camera is
 	gl_PointSize = gl_Position.z;
 }
