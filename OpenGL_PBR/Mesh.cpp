@@ -195,7 +195,7 @@ void Mesh::setupInstancedMesh()
 		}
 	}
 
-	unsigned int buffer;
+	/*unsigned int buffer;
 	glGenBuffers(1, &buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 	glBufferData(GL_ARRAY_BUFFER, floorModelMats.size() * sizeof(mat4), &floorModelMats.at(0), GL_STATIC_DRAW);
@@ -218,6 +218,12 @@ void Mesh::setupInstancedMesh()
 	glVertexAttribDivisor(6, 1);
 
 	glBindVertexArray(0);
+	*/
 
-	glBindVertexArray(VAO);
+	GLuint ssboModelMatrices;
+	glGenBuffers(1, &ssboModelMatrices);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboModelMatrices);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(mat4) * floorModelMats.size(), &floorModelMats.at(0), GL_STATIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssboModelMatrices); //Allocate shader storage buffer to binding point 1
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }

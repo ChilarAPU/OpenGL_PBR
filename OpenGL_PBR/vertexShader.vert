@@ -15,6 +15,11 @@ layout (std140) uniform Matrices
 	mat4 view;
 };
 
+layout (std430, binding = 1) buffer ModelMatrices
+{
+	mat4 modelMatrix[];
+};
+
 //Group up all output values inside an interface
 out VS_OUT
 {
@@ -35,9 +40,9 @@ void main()
 	}
 	else
 	{
-		gl_Position = projection * view * instanceMatrix * vec4(aPos, 1.0f);
-		vs_out.Normal = mat3(transpose(inverse(instanceMatrix))) * aNormal; //this calculation deals with non-uniform scaling 
-		vs_out.FragPos = vec3(instanceMatrix * vec4(aPos, 1.0)); //Position value in world space coordinates that can be used by the fragment shader
+		gl_Position = projection * view * modelMatrix[gl_InstanceID] * vec4(aPos, 1.0f);
+		vs_out.Normal = mat3(transpose(inverse(modelMatrix[gl_InstanceID]))) * aNormal; //this calculation deals with non-uniform scaling 
+		vs_out.FragPos = vec3(modelMatrix[gl_InstanceID] * vec4(aPos, 1.0)); //Position value in world space coordinates that can be used by the fragment shader
 	}
 	vs_out.texCoord = aTexCoord;
 	//mulitply position of incoming vertex by the model matrix
