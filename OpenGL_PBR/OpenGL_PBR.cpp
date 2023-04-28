@@ -217,10 +217,14 @@ Shader* skyboxShader;
 
 Shader* normalFaceShader;
 
+Shader* shadowMapShader;
+
 map<float, vec3> sortedWindows; //Holds a sorted map of window positions so that they can be drawn in the correct order
 
 unsigned int framebuffer; //custom framebuffer delcaration
 unsigned int intermediateFramebuffer; //custom framebuffer delcaration
+
+unsigned int shadowMapFB; //shadow map framebuffer
 
 Shader* screenSpaceShader;
 
@@ -259,6 +263,8 @@ int main() {
 	screenSpaceShader = new Shader("screenSpaceShader.vert", "screenSpaceShader.frag");
 
 	normalFaceShader = new Shader("visibleNormals.vert", "visibleNormals.frag", "geometryShader.geom");
+
+	shadowMapShader = new Shader("shadowMap.vert", "shadowMap.frag");
 
 	//temp FPS calc
 	float time = 1.f; //Time to delay for
@@ -513,6 +519,28 @@ int main() {
 	matrices_index = glGetUniformBlockIndex(normalFaceShader->ID, "Matrices");
 	glUniformBlockBinding(normalFaceShader->ID, matrices_index, 0);
 
+	//Shadow map fraembuffer
+	glGenFramebuffers(1, &shadowMapFB);
+	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024; //Resolution of the shadow map
+	unsigned int shadowMap;
+	glGenTextures(1, &shadowMap);
+	glBindTexture(GL_TEXTURE_2D, shadowMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0,
+		GL_DEPTH_COMPONENT, GL_FLOAT, NULL); //Texture that only stores the depth value of each fragment
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFB);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowMap, 0);
+	//Tell OpenGL this framebuffer will not be used for any rendering
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	//Run the window until explicitly told to stop
 	while (!glfwWindowShouldClose(window))  //Check if the window has been instructed to close
 	{
@@ -528,14 +556,7 @@ int main() {
 
 		//glEnable(GL_FRAMEBUFFER_SRGB); //Using OpenGL's built in gamma correction sRGB tool
 
-		//draw scene into offscreen frame buffer
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-		//glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
-
-		//Clear colour buffer and depth buffer every frame before rendering
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		//First render to shadow map
 
 		glEnable(GL_DEPTH_TEST); //Tell OpenGL to use Z-Buffer
 		glDepthFunc(GL_LEQUAL); //Needed for skybox otherwise it has z-conflict with normal background
@@ -554,11 +575,49 @@ int main() {
 
 		glEnable(GL_PROGRAM_POINT_SIZE); //Vizualize vertex points
 
+		//Clear colour buffer and depth buffer every frame before rendering
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		//Use orthographic projecton for shadows. 
+		float near_plane = 1.0f, far_plane = 7.5f;
+		mat4 lightProjection = ortho(-10.f, 10.f, -10.f, 10.f, near_plane, far_plane);
+		//view matrix
+		mat4 lightView = lookAt(vec3(1.2f, 1.0f, 2.0f), //Light position 
+			vec3(0.0f, 0.0f, 0.0f), //center of scene
+			vec3(0.0f, 1.0f, 0.0f)); //up vector
+		mat4 lightViewMatrix = lightProjection * lightView;
 
+		//cull front faces to deal with the peter panning effect
+		glEnable(GL_CULL_FACE); //enable face culling
+		glCullFace(GL_FRONT); //Cull front faces
+
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT); //Change viewport to size of shadow map
+		glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFB);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		shadowMapShader->use();
+		shadowMapShader->setMat4("lightSpaceMatrix", lightViewMatrix);
+		display(*shadowMapShader, *backpack);
+
+		glViewport(0, 0, VIEWPORTWIDTH, VIEWPORTHEIGHT); //Change viewport to size of shadow map
+		//draw scene into offscreen frame buffer
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+		//glBindTexture(GL_TEXTURE_2D, shadowMap);
+
+		//Clear colour buffer and depth buffer every frame before rendering
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+		glDisable(GL_CULL_FACE);
+		glCullFace(GL_BACK); //Cull front faces
 		//glEnable(GL_CULL_FACE); //enable face culling
 		//glCullFace(GL_BACK); //Cull front faces
 		//glFrontFace(GL_CCW); //counter clockwise ordering of faces. This is the usual default bahaviour of exported models
-
+		currentShader.use();
+		currentShader.setMat4("lightSpaceMatrix", lightViewMatrix);
+		currentShader.setVec3("lightPos", vec3(1.2f, 1.0f, 2.0f));
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, shadowMap);
+		currentShader.setInt("shadowMap", 5);
 		display(currentShader, *backpack);
 
 		//Blit multisampled frameburffer to default framebuffer
@@ -810,7 +869,7 @@ void display(Shader shaderToUse, Model m)
 		glStencilFunc(GL_ALWAYS, 0, 0xFF);
 		glEnable(GL_DEPTH_TEST);
 	}
-
+	
 	//load multiple transparent grass
 	/*shaderToUse.use();
 	glBindVertexArray(vegetationVAO);
@@ -830,6 +889,7 @@ void display(Shader shaderToUse, Model m)
 	shaderToUse.setBool("bIsTransparent", false);
 	*/
 
+	
 	//Draw skybox last
 	//Disable culling otherwise skyboxVAO is automatically removed
 	glDisable(GL_CULL_FACE); 
@@ -861,8 +921,8 @@ void display(Shader shaderToUse, Model m)
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		//This fixes the problem of windows not accounting for other windows that are behind them
 	}
-	shaderToUse.setBool("bIsTransparent", false);
 	
+	shaderToUse.setBool("bIsTransparent", false);
 }
 
 void bindCubeToVAO(unsigned int& vao)

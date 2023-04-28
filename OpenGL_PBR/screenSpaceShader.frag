@@ -69,4 +69,9 @@ void main()
         col += sampleTex[i] * identityKernal[i];
     }
     FragColor = vec4(col, 1.0);
+
+    //Shadow map debugging
+   //float depthValue = texture(screenTexture, TexCoords).r;
+    // FragColor = vec4(vec3(LinearizeDepth(depthValue) / far_plane), 1.0); // perspective
+    //FragColor = vec4(vec3(depthValue), 1.0); // orthographic
 }

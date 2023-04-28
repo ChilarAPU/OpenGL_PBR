@@ -88,7 +88,7 @@ void Mesh::Draw(Shader& shader, bool bInstanced)
 	{
 		shader.setBool("bInstance", true);
 		glBindVertexArray(VAO);
-		glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0, 50);
+		glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0, 100);
 		glBindVertexArray(0);
 		shader.setBool("bInstance", false);
 	}
@@ -159,11 +159,11 @@ void Mesh::setupInstancedMesh()
 	vector<vec3> floorVerts;
 	vector<mat4> floorModelMats;
 	//Temp way to initialize floor instance locations
-	int floorWidth = 5; //How wide the floor should be 
+	int floorWidth = 10; //How wide the floor should be 
 	float vertValue = 1.0; //To place floor left
 	float HoriValue = 1.5; //To place floor behind
-	floorVerts.emplace_back(vec3(1.0, -2.0, 2.5)); //push starting value
-	for (int i = 0; i < 50; i++) //Create 50 floors
+	floorVerts.emplace_back(vec3(5.0, -1.8, 8)); //push starting value
+	for (int i = 0; i < 100; i++) //Create 50 floors
 	{
 		float mod = i % floorWidth; //Have we reached maximum width
 		if (mod != 0)
@@ -184,7 +184,7 @@ void Mesh::setupInstancedMesh()
 			// Add Floor vertically
 			vec3 prev = floorVerts.at(i); //access previous value
 			vec3 newVert = prev;
-			newVert.x = 1.0; //TEMP WAY TO REVERT HORIZONAL VALUE
+			newVert.x = floorVerts.at(0).x; //TEMP WAY TO REVERT HORIZONAL VALUE
 			newVert.z -= HoriValue;
 			floorVerts.push_back(newVert);
 			//trying with model matrix instead

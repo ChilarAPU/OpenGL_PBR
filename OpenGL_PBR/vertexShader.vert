@@ -6,6 +6,7 @@ layout (location = 2) in vec2 aTexCoord;
 layout (location = 3) in mat4 instanceMatrix; //Used with instancing, takes up slot 3, 4, 5 and 6
 
 uniform mat4 model;
+uniform mat4 lightSpaceMatrix; //Depth value from shadow map
 //uniform mat4 view;
 //uniform mat4 projection;
 
@@ -26,6 +27,7 @@ out VS_OUT
 	vec2 texCoord;
 	vec3 Normal;
 	vec3 FragPos; //Position of fragment in world space
+	vec4 FragPosLightSpace; //Vertex position in light space
 } vs_out;
 
 uniform bool bInstance = false;
@@ -44,6 +46,7 @@ void main()
 		vs_out.Normal = mat3(transpose(inverse(modelMatrix[gl_InstanceID]))) * aNormal; //this calculation deals with non-uniform scaling 
 		vs_out.FragPos = vec3(modelMatrix[gl_InstanceID] * vec4(aPos, 1.0)); //Position value in world space coordinates that can be used by the fragment shader
 	}
+	vs_out.FragPosLightSpace = lightSpaceMatrix * vec4(vs_out.FragPos, 1.0); //Vertex Position from the direction of the light source
 	vs_out.texCoord = aTexCoord;
 	//mulitply position of incoming vertex by the model matrix
 	//Increase point size the further away the camera is
