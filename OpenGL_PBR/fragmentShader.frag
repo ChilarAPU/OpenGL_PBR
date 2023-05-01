@@ -67,6 +67,9 @@ uniform sampler2D grassTexture;
 uniform bool bIsTransparent;
 uniform sampler2D shadowMap; 
 
+uniform samplerCube shadowMapCube; 
+uniform float far_plane;
+
 uniform vec3 lightPos;
 
 //get skybox cubemap for basic reflections
@@ -79,6 +82,7 @@ layout (depth_greater) out float gl_FragDepth;
 
 // Give attenuation a default value as not every light caster uses it
 float ShadowCalculation(vec4 fragPosLightSpace);
+float ShadowCalculation(vec3 fragPos);
 vec3 calculatePhongLighting(vec3 lightDir, vec3 normal, vec3 viewDir, vec3 ambientColor, vec3 diffuseColor, vec3 specularColor, float attenuation = 1);
 vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 viewDir);
 vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
@@ -175,7 +179,7 @@ vec3 calculatePhongLighting(vec3 lightDir, vec3 normal, vec3 viewDir, vec3 ambie
 	diffuse *= attenuation;
 	specular *= attenuation;
 	//calculate ShadowCalculation
-	float shadow = ShadowCalculation(fs_in.FragPosLightSpace);
+	float shadow = ShadowCalculation(fs_in.FragPos);
 	vec3 lightingDif = (1.0 - shadow) * diffuse;
 
 	return (ambient + lightingDif + specular);
@@ -262,6 +266,41 @@ float ShadowCalculation(vec4 fragPosLightSpace)
 		}
 	}
 	shadow /= 9.0;
+
+	return shadow;
+}
+
+float ShadowCalculation(vec3 fragPos)
+{
+	//Perpendicular directions of the cubemap to reduce redundant calls
+	vec3 sampleOffsetDirections[20] = vec3[]
+	(
+	vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
+	vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+	vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+	vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+	vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+	);   
+	vec3 fragToLight = fragPos - lightPos;
+	float currentDepth = length(fragToLight);
+	float viewDistance = length(viewPos - fragPos);
+	//Make shadows sharper when player is close to shadow
+	float diskRadius = (1.0 + (viewDistance / far_plane)) / 25.0;
+
+	//Same PCF filter but for cubemaps
+	float shadow = 0.0f;
+	float bias = 0.15;
+	float samples = 20.0f; //pass through size of the array
+	float offset = 0.1f;
+	for (int i = 0; i < samples; i++)
+	{
+		float closestDepth = texture(shadowMapCube, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
+		closestDepth *= far_plane;
+		if(currentDepth - bias > closestDepth)
+			shadow += 1.0;
+	}
+	shadow /= float(samples);
+
 
 	return shadow;
 }

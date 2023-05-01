@@ -54,6 +54,7 @@
     <None Include="visibleNormals.frag" />
     <None Include="shadowMap.vert" />
     <None Include="shadowMap.frag" />
+    <None Include="shadowMap.geom" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">

@@ -231,6 +231,8 @@ Shader* screenSpaceShader;
 
 unsigned int colorBuffer;
 
+unsigned int depthCubemap;
+
 
 int main() {
 
@@ -265,7 +267,7 @@ int main() {
 
 	normalFaceShader = new Shader("visibleNormals.vert", "visibleNormals.frag", "geometryShader.geom");
 
-	shadowMapShader = new Shader("shadowMap.vert", "shadowMap.frag");
+	shadowMapShader = new Shader("shadowMap.vert", "shadowMap.frag", "shadowMap.geom");
 
 	//temp FPS calc
 	float time = 1.f; //Time to delay for
@@ -524,6 +526,7 @@ int main() {
 	//Shadow map fraembuffer
 	glGenFramebuffers(1, &shadowMapFB);
 	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024; //Resolution of the shadow map
+
 	unsigned int shadowMap;
 	glGenTextures(1, &shadowMap);
 	glBindTexture(GL_TEXTURE_2D, shadowMap);
@@ -535,13 +538,51 @@ int main() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFB);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowMap, 0);
 	//Tell OpenGL this framebuffer will not be used for any rendering
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//Omnidirectional shadows using a depth cubemap
+	glGenTextures(1, &depthCubemap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	for (int i = 0; i < 6; ++i)
+	{
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH,
+			SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	//Override old framebuffer GL_DEPTH_ATTACHMENT value
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFB);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	//Set direction for each cubemap plane
+	float aspect = (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT;
+	float near = 1.0f;
+	float far = 25.f;
+	mat4 shadowProj = perspective(radians(90.f), aspect, near, far);
+
+	vector<mat4> shadowTransforms;
+	shadowTransforms.push_back(shadowProj * lookAt(
+		vec3(0.7f, 0.2f, 2.0f), vec3(0.7f, 0.2f, 2.0f) + vec3(1.0, 0.0, 0.0), vec3(0.0, -1.0, 0.0)));
+	shadowTransforms.push_back(shadowProj * lookAt(
+		vec3(0.7f, 0.2f, 2.0f), vec3(0.7f, 0.2f, 2.0f) + vec3(-1.0, 0.0, 0.0), vec3(0.0, -1.0, 0.0)));
+	shadowTransforms.push_back(shadowProj * lookAt(
+		vec3(0.7f, 0.2f, 2.0f), vec3(0.7f, 0.2f, 2.0f) + vec3(0.0, 1.0, 0.0), vec3(0.0, 0.0, 1.0)));
+	shadowTransforms.push_back(shadowProj * lookAt(
+		vec3(0.7f, 0.2f, 2.0f), vec3(0.7f, 0.2f, 2.0f) + vec3(0.0, -1.0, 0.0), vec3(0.0, 0.0, -1.0)));
+	shadowTransforms.push_back(shadowProj * lookAt(
+		vec3(0.7f, 0.2f, 2.0f), vec3(0.7f, 0.2f, 2.0f) + vec3(0.0, 0.0, 1.0), vec3(0.0, -1.0, 0.0)));
+	shadowTransforms.push_back(shadowProj * lookAt(
+		vec3(0.7f, 0.2f, 2.0f), vec3(0.7f, 0.2f, 2.0f) + vec3(0.0, 0.0, -1.0), vec3(0.0, -1.0, 0.0)));
 
 	//Run the window until explicitly told to stop
 	while (!glfwWindowShouldClose(window))  //Check if the window has been instructed to close
@@ -597,10 +638,17 @@ int main() {
 		glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFB);
 		glClear(GL_DEPTH_BUFFER_BIT);
 		shadowMapShader->use();
+		//bind shadowTransforms vector to shader
+		for (int i = 0; i < 6; ++i)
+		{
+			shadowMapShader->setMat4("shadowMatrices[" + to_string(i) + "]", shadowTransforms.at(i));
+		}
+		shadowMapShader->setFloat("far_plane", far);
+		shadowMapShader->setVec3("lightPos", vec3(0.7f, 0.2f, 2.0f));
 		shadowMapShader->setMat4("lightSpaceMatrix", lightViewMatrix);
 		display(*shadowMapShader, *backpack);
 
-		glViewport(0, 0, VIEWPORTWIDTH, VIEWPORTHEIGHT); //Change viewport to size of shadow map
+		glViewport(0, 0, VIEWPORTWIDTH, VIEWPORTHEIGHT); //Reset viewport size
 		//draw scene into offscreen frame buffer
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		//glBindTexture(GL_TEXTURE_2D, shadowMap);
@@ -617,9 +665,11 @@ int main() {
 		currentShader.use();
 		currentShader.setMat4("lightSpaceMatrix", lightViewMatrix);
 		currentShader.setVec3("lightPos", vec3(1.2f, 1.0f, 2.0f));
+		currentShader.setFloat("far_plane", far);
 		glActiveTexture(GL_TEXTURE5);
-		glBindTexture(GL_TEXTURE_2D, shadowMap);
-		currentShader.setInt("shadowMap", 5);
+		//glBindTexture(GL_TEXTURE_2D, shadowMap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+		currentShader.setInt("shadowMapCube", 5);
 		display(currentShader, *backpack);
 
 		//Blit multisampled frameburffer to default framebuffer
