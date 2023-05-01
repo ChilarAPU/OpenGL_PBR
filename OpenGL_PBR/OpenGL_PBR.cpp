@@ -170,6 +170,7 @@ float skyboxVertices[] = {
 	-1.0f,  1.0f,  1.0f,
 	-1.0f,  1.0f, -1.0f,
 
+
 	-1.0f, -1.0f, -1.0f,
 	-1.0f, -1.0f,  1.0f,
 	 1.0f, -1.0f, -1.0f,
@@ -353,7 +354,8 @@ int main() {
 
 	//allocate memory for texture but do not fill it. Also set texture to size of viewport
 	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, VIEWPORTWIDTH, VIEWPORTHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA, VIEWPORTWIDTH, VIEWPORTHEIGHT, GL_TRUE);
+	//Using floating point lighitng values to exceed the LDR range
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA16F, VIEWPORTWIDTH, VIEWPORTHEIGHT, GL_TRUE);
 
 	//glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	//glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -392,12 +394,12 @@ int main() {
 
 	//Create intermediate framebuffer with only a color buffer
 	glGenFramebuffers(1, &intermediateFramebuffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, intermediateFramebuffer);
 
 	glGenTextures(1, &colorBuffer);
 	glBindTexture(GL_TEXTURE_2D, colorBuffer);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, VIEWPORTWIDTH, VIEWPORTHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, VIEWPORTWIDTH, VIEWPORTHEIGHT, 0, GL_RGBA, GL_FLOAT, nullptr);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -636,6 +638,7 @@ int main() {
 		glBindVertexArray(screenQuadVAO);
 		glBindTexture(GL_TEXTURE_2D, colorBuffer);
 		screenSpaceShader->setInt("screenTexture", 0);
+		screenSpaceShader->setFloat("exposure", 1.0); //HDR exposure
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		//glDisable(GL_FRAMEBUFFER_SRGB); //Disable gamma correction for next frame
 

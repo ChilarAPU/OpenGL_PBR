@@ -156,10 +156,6 @@ void main()
 	//Gives the effect of view frustum being much closer than it actually is
 	//gl_FragDepth = gl_FragCoord.z + 0.05;
 
-	//Apply gamma correction (translate final output from linear to non-linear color space)
-	float gamma = 2.2; //gamma ratio
-	FragColor.rgb = pow(FragColor.rgb, vec3(1.0/gamma));
-
 
 }
 

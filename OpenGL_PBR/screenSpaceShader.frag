@@ -4,6 +4,7 @@ out vec4 FragColor;
 in vec2 TexCoords;
 
 uniform sampler2D screenTexture;
+uniform float exposure; //exposure of HDR
 
 const float offset = 1.0 / 300.0;
 
@@ -71,7 +72,19 @@ void main()
     FragColor = vec4(col, 1.0);
 
     //Shadow map debugging
-   //float depthValue = texture(screenTexture, TexCoords).r;
+    //float depthValue = texture(screenTexture, TexCoords).r;
     // FragColor = vec4(vec3(LinearizeDepth(depthValue) / far_plane), 1.0); // perspective
     //FragColor = vec4(vec3(depthValue), 1.0); // orthographic
+
+    //HDR mapping to LDR
+    vec3 hdrColor = texture(screenTexture, TexCoords).rgb;
+    //Apply gamma correction (translate final output from linear to non-linear color space)
+	const float gamma = 2.2; //gamma ratio
+    
+    //Reinhard Tone Mapping
+    vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
+
+    mapped = pow(mapped, vec3(1.0 / gamma));
+
+    FragColor = vec4(mapped, 1.0);
 }
