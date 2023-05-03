@@ -1,5 +1,6 @@
 #version 460
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BloomColor;
 
 in vec3 vertexColor;
 in vec2 texCoord;

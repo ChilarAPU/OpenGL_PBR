@@ -143,6 +143,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="fragmentShader.frag" />
+    <None Include="gaussianBlur.frag" />
+    <None Include="gaussianBlur.vert" />
     <None Include="geometryShader.geom" />
     <None Include="lightShader.frag" />
     <None Include="lightShader.vert" />
